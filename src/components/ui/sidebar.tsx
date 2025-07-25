@@ -1,0 +1,201 @@
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const SidebarContext = React.createContext<{
+  collapsed: boolean
+  setCollapsed: (collapsed: boolean) => void
+}>({
+  collapsed: false,
+  setCollapsed: () => {}
+})
+
+export function useSidebar() {
+  const context = React.useContext(SidebarContext)
+  if (!context) {
+    throw new Error("useSidebar must be used within a SidebarProvider")
+  }
+  return context
+}
+
+interface SidebarProviderProps {
+  children: React.ReactNode
+  collapsedWidth?: number
+}
+
+export function SidebarProvider({ children, collapsedWidth = 56 }: SidebarProviderProps) {
+  const [collapsed, setCollapsed] = React.useState(false)
+
+  return (
+    <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
+      <div className="min-h-screen flex w-full">
+        {children}
+      </div>
+    </SidebarContext.Provider>
+  )
+}
+
+const sidebarVariants = cva(
+  "relative flex h-screen flex-col border-r bg-background transition-all duration-300",
+  {
+    variants: {
+      variant: {
+        default: "border-border",
+        ghost: "border-transparent",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+interface SidebarProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof sidebarVariants> {
+  collapsible?: boolean
+}
+
+export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
+  ({ className, variant, collapsible, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(sidebarVariants({ variant, className }))}
+        {...props}
+      />
+    )
+  }
+)
+Sidebar.displayName = "Sidebar"
+
+export const SidebarContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex-1 overflow-auto", className)}
+    {...props}
+  />
+))
+SidebarContent.displayName = "SidebarContent"
+
+export const SidebarGroup = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
+  }
+>(({ className, open, onOpenChange, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("px-3 py-2", className)}
+    {...props}
+  />
+))
+SidebarGroup.displayName = "SidebarGroup"
+
+export const SidebarGroupLabel = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "px-2 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider",
+      className
+    )}
+    {...props}
+  />
+))
+SidebarGroupLabel.displayName = "SidebarGroupLabel"
+
+export const SidebarGroupContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("space-y-1", className)} {...props} />
+))
+SidebarGroupContent.displayName = "SidebarGroupContent"
+
+export const SidebarMenu = React.forwardRef<
+  HTMLUListElement,
+  React.HTMLAttributes<HTMLUListElement>
+>(({ className, ...props }, ref) => (
+  <ul ref={ref} className={cn("space-y-1", className)} {...props} />
+))
+SidebarMenu.displayName = "SidebarMenu"
+
+export const SidebarMenuItem = React.forwardRef<
+  HTMLLIElement,
+  React.HTMLAttributes<HTMLLIElement>
+>(({ className, ...props }, ref) => (
+  <li ref={ref} className={cn("", className)} {...props} />
+))
+SidebarMenuItem.displayName = "SidebarMenuItem"
+
+export const SidebarMenuButton = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    asChild?: boolean
+  }
+>(({ className, asChild = false, ...props }, ref) => {
+  if (asChild) {
+    return (
+      <div className={cn(
+        "flex w-full items-center rounded-md px-3 py-2 text-sm transition-colors",
+        className
+      )}>
+        {props.children}
+      </div>
+    )
+  }
+  
+  return (
+    <button
+      ref={ref}
+      className={cn(
+        "flex w-full items-center rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted",
+        className
+      )}
+      {...props}
+    />
+  )
+})
+SidebarMenuButton.displayName = "SidebarMenuButton"
+
+export const SidebarTrigger = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ className, ...props }, ref) => {
+  const { collapsed, setCollapsed } = useSidebar()
+  
+  return (
+    <button
+      ref={ref}
+      onClick={() => setCollapsed(!collapsed)}
+      className={cn(
+        "flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        className
+      )}
+      {...props}
+    >
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 15 15"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M1.5 3C1.22386 3 1 3.22386 1 3.5C1 3.77614 1.22386 4 1.5 4H13.5C13.7761 4 14 3.77614 14 3.5C14 3.22386 13.7761 3 13.5 3H1.5ZM1 7.5C1 7.22386 1.22386 7 1.5 7H13.5C13.7761 7 14 7.22386 14 7.5C14 7.77614 13.7761 8 13.5 8H1.5C1.22386 8 1 7.77614 1 7.5ZM1 11.5C1 11.2239 1.22386 11 1.5 11H13.5C13.7761 11 14 11.2239 14 11.5C14 11.7761 13.7761 12 13.5 12H1.5C1.22386 12 1 11.7761 1 11.5Z"
+          fill="currentColor"
+          fillRule="evenodd"
+          clipRule="evenodd"
+        />
+      </svg>
+    </button>
+  )
+})
+SidebarTrigger.displayName = "SidebarTrigger"
