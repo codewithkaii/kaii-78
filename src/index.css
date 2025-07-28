@@ -9,7 +9,42 @@
 }
 
 .glass-card {
-  @apply bg-secondary bg-opacity-20 backdrop-blur-lg border border-white border-opacity-10 shadow-lg;
+  @apply bg-card/80 backdrop-blur-xl border border-white/10 shadow-2xl;
+}
+
+.futuristic-orb {
+  background: conic-gradient(from 0deg, #00ff88, #0088ff, #ff0088, #ffaa00, #00ff88);
+  box-shadow: 
+    0 0 20px rgba(0, 255, 136, 0.3),
+    0 0 40px rgba(0, 255, 136, 0.2),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+  animation: orb-pulse 3s ease-in-out infinite, orb-rotate 10s linear infinite;
+}
+
+@keyframes orb-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 
+      0 0 20px rgba(0, 255, 136, 0.3),
+      0 0 40px rgba(0, 255, 136, 0.2),
+      inset 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 
+      0 0 30px rgba(0, 255, 136, 0.5),
+      0 0 60px rgba(0, 255, 136, 0.3),
+      inset 0 0 30px rgba(255, 255, 255, 0.2);
+  }
+}
+
+@keyframes orb-rotate {
+  from {
+    background: conic-gradient(from 0deg, #00ff88, #0088ff, #ff0088, #ffaa00, #00ff88);
+  }
+  to {
+    background: conic-gradient(from 360deg, #00ff88, #0088ff, #ff0088, #ffaa00, #00ff88);
+  }
 }
 
 .crypto-chart {

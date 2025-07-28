@@ -30,32 +30,36 @@ export default function Dashboard() {
 
   const stats = [
     {
-      title: "Upcoming Appointments",
-      value: "3",
-      description: "Next: 2:30 PM with Sarah",
-      icon: CalendarIcon,
-      color: "text-blue-600"
-    },
-    {
-      title: "Missed Calls",
-      value: "2",
-      description: "1 voicemail pending",
-      icon: PhoneCall,
-      color: "text-red-600"
-    },
-    {
-      title: "Recent Bookings",
-      value: "5",
-      description: "Today: 2 confirmed",
-      icon: CheckCircle,
-      color: "text-green-600"
-    },
-    {
-      title: "CRM Activity",
-      value: "12",
-      description: "New interactions",
+      title: "ACTIVE CLIENTS",
+      value: "847",
+      description: "+12.5% from last month",
       icon: Users,
-      color: "text-purple-600"
+      color: "text-primary",
+      change: "+12.5%"
+    },
+    {
+      title: "MONTHLY REVENUE",
+      value: "$52,291",
+      description: "+8.2% growth",
+      icon: TrendingUp,
+      color: "text-primary",
+      change: "+8.2%"
+    },
+    {
+      title: "CALLS HANDLED",
+      value: "1,247",
+      description: "94% success rate",
+      icon: PhoneCall,
+      color: "text-primary",
+      change: "+16.84%"
+    },
+    {
+      title: "APPOINTMENTS",
+      value: "324",
+      description: "This month",
+      icon: CalendarIcon,
+      color: "text-primary",
+      change: "+2.34%"
     }
   ];
 
@@ -87,82 +91,102 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Greeting Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
-          {getGreeting()}, {userName}! 👋
-        </h1>
-        <p className="text-muted-foreground">
-          {currentTime.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
-        </p>
-        <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-          <h3 className="font-semibold mb-2">Today's Agenda</h3>
-          <ul className="text-sm space-y-1 text-muted-foreground">
-            <li>• 2:30 PM - Call with Sarah about project updates</li>
-            <li>• 4:00 PM - Review new client proposals</li>
-            <li>• 5:30 PM - Team sync meeting</li>
-          </ul>
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">
+            Welcome back, {userName}
+          </h1>
+          <p className="text-muted-foreground">
+            Here's take a look at your performance and analytics.
+          </p>
         </div>
-      </div>
 
-      {/* Quick Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <Card key={index} className="glass-card hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`w-4 h-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {stat.description}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, index) => (
+            <Card key={index} className="glass-card border-0 hover:bg-card/90 transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <stat.icon className="w-8 h-8 text-muted-foreground" />
+                  <span className="text-sm font-medium text-primary">{stat.change}</span>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    {stat.title}
+                  </p>
+                  <p className="text-3xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.description}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-      {/* Recent Activity Feed */}
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Recent Activity
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 max-h-64 overflow-y-auto">
-            {activities.map((activity, index) => (
-              <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/20">
-                <div className="text-xs text-muted-foreground min-w-[60px]">
-                  {activity.time}
+        {/* Activity Chart and Quick Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Performance Chart Placeholder */}
+          <div className="lg:col-span-2">
+            <Card className="glass-card border-0 h-96">
+              <CardHeader>
+                <CardTitle className="text-lg">Performance Analytics</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {currentTime.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </p>
+              </CardHeader>
+              <CardContent className="h-full">
+                <div className="h-full flex items-center justify-center bg-muted/10 rounded-lg">
+                  <div className="text-center">
+                    <TrendingUp className="w-16 h-16 text-primary mx-auto mb-4" />
+                    <p className="text-lg font-semibold mb-2">Analytics Dashboard</p>
+                    <p className="text-sm text-muted-foreground">Interactive charts coming soon</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{activity.action}</p>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    activity.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                    activity.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                    activity.status === 'New' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {activity.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Central AI Orb */}
-      <AIOrb size="large" position="center" />
+          {/* Recent Activity */}
+          <div>
+            <Card className="glass-card border-0 h-96">
+              <CardHeader>
+                <CardTitle className="text-lg">Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {activities.map((activity, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors">
+                      <div className="text-xs text-muted-foreground min-w-[60px] mt-1">
+                        {activity.time}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{activity.action}</p>
+                        <span className={`inline-block text-xs px-2 py-1 rounded-full mt-1 ${
+                          activity.status === 'Completed' ? 'bg-primary/20 text-primary' :
+                          activity.status === 'Pending' ? 'bg-warning/20 text-warning' :
+                          activity.status === 'New' ? 'bg-accent/20 text-accent' :
+                          'bg-muted/20 text-muted-foreground'
+                        }`}>
+                          {activity.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Futuristic AI Orb */}
+        <AIOrb size="large" position="center" />
+      </div>
     </div>
   );
 }

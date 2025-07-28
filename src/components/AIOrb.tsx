@@ -34,24 +34,50 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
 
   return (
     <>
-      {/* AI Orb Button */}
+      {/* Futuristic AI Orb Button */}
       <div className={`${positionClass} z-50`}>
-        <Button
-          onClick={() => setIsOpen(true)}
-          className={`
-            ${orbSize} 
-            rounded-full 
-            bg-gradient-to-br from-primary via-accent to-primary 
-            hover:from-primary/90 hover:via-accent/90 hover:to-primary/90
-            shadow-2xl 
-            animate-pulse
-            border-4 border-white/20
-            transition-all duration-300 hover:scale-110
-          `}
-          size="icon"
-        >
-          <MessageCircle className={size === "large" ? "w-8 h-8" : "w-6 h-6"} />
-        </Button>
+        <div className="relative">
+          {/* Outer ring animation */}
+          <div className={`${orbSize} absolute inset-0 rounded-full border-2 border-primary/30 animate-spin`} 
+               style={{ animationDuration: '8s' }}></div>
+          
+          {/* Inner orb */}
+          <Button
+            onClick={() => setIsOpen(true)}
+            className={`
+              ${orbSize} 
+              rounded-full 
+              futuristic-orb
+              relative
+              border-0
+              transition-all duration-500 hover:scale-110
+              group
+              overflow-hidden
+            `}
+            size="icon"
+          >
+            {/* Inner glow effect */}
+            <div className="absolute inset-2 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 blur-sm"></div>
+            
+            {/* Icon with holographic effect */}
+            <MessageCircle 
+              className={`${size === "large" ? "w-8 h-8" : "w-6 h-6"} relative z-10 text-white drop-shadow-[0_0_8px_rgba(0,255,136,0.8)]`} 
+            />
+            
+            {/* Scanning line effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+          </Button>
+          
+          {/* Orbit particles */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className={`${orbSize} relative`}>
+              <div className="absolute top-0 left-1/2 w-1 h-1 bg-primary rounded-full animate-spin origin-bottom" 
+                   style={{ animationDuration: '3s', transformOrigin: `0 ${size === "large" ? "48px" : "24px"}` }}></div>
+              <div className="absolute top-0 left-1/2 w-1 h-1 bg-accent rounded-full animate-spin origin-bottom" 
+                   style={{ animationDuration: '4s', animationDelay: '1s', transformOrigin: `0 ${size === "large" ? "48px" : "24px"}` }}></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Chat Modal */}
