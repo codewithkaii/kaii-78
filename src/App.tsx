@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AuthProvider } from "@/components/AuthContext";
 import Dashboard from "./pages/Dashboard";
+import Company from "./pages/Company";
 import Calendar from "./pages/Calendar";
 import CRM from "./pages/CRM";
 import Calls from "./pages/Calls";
@@ -42,6 +43,7 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/company" element={<Company />} />
                     <Route path="/calendar" element={<Calendar />} />
                     <Route path="/crm" element={<CRM />} />
                     <Route path="/calls" element={<Calls />} />
