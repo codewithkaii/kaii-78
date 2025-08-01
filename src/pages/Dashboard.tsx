@@ -7,19 +7,64 @@ import {
   PhoneCall, 
   Voicemail,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Building2,
+  FileText
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { AIOrb } from "@/components/AIOrb";
+import { useAuth } from "@/components/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [userName] = useState("Alex"); // This would come from user context
+  const [userStats, setUserStats] = useState({
+    clients: 0,
+    events: 0,
+    documents: 0,
+    hasCompany: false
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserStats();
+    }
+  }, [user]);
+
+  const fetchUserStats = async () => {
+    if (!user) return;
+
+    try {
+      // Fetch user's actual data
+      const [clientsRes, eventsRes, documentsRes, companyRes] = await Promise.all([
+        supabase.from('clients').select('id').eq('user_id', user.id),
+        supabase.from('events').select('id').eq('user_id', user.id),
+        supabase.from('documents').select('id').eq('user_id', user.id),
+        supabase.from('companies').select('id').eq('user_id', user.id).single()
+      ]);
+
+      setUserStats({
+        clients: clientsRes.data?.length || 0,
+        events: eventsRes.data?.length || 0,
+        documents: documentsRes.data?.length || 0,
+        hasCompany: !!companyRes.data
+      });
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getGreeting = () => {
     const hour = currentTime.getHours();
@@ -30,65 +75,85 @@ export default function Dashboard() {
 
   const stats = [
     {
-      title: "ACTIVE CLIENTS",
-      value: "847",
-      description: "+12.5% from last month",
+      title: "CLIENTS",
+      value: userStats.clients.toString(),
+      description: userStats.clients > 0 ? "Active clients" : "No clients yet",
       icon: Users,
       color: "text-primary",
-      change: "+12.5%"
+      action: () => navigate('/crm')
     },
     {
-      title: "MONTHLY REVENUE",
-      value: "$52,291",
-      description: "+8.2% growth",
-      icon: TrendingUp,
+      title: "DOCUMENTS",
+      value: userStats.documents.toString(),
+      description: userStats.documents > 0 ? "Uploaded documents" : "No documents yet",
+      icon: FileText,
       color: "text-primary",
-      change: "+8.2%"
+      action: () => navigate('/company')
     },
     {
-      title: "CALLS HANDLED",
-      value: "1,247",
-      description: "94% success rate",
-      icon: PhoneCall,
-      color: "text-primary",
-      change: "+16.84%"
-    },
-    {
-      title: "APPOINTMENTS",
-      value: "324",
-      description: "This month",
+      title: "EVENTS",
+      value: userStats.events.toString(),
+      description: userStats.events > 0 ? "Scheduled events" : "No events yet",
       icon: CalendarIcon,
       color: "text-primary",
-      change: "+2.34%"
+      action: () => navigate('/calendar')
+    },
+    {
+      title: "BUSINESS",
+      value: userStats.hasCompany ? "✓" : "Setup",
+      description: userStats.hasCompany ? "Profile complete" : "Setup required",
+      icon: Building2,
+      color: "text-primary",
+      action: () => navigate('/company')
     }
   ];
 
-  const activities = [
+  const quickActions = [
     {
-      time: "10:30 AM",
-      action: "Call with John Smith",
-      status: "Completed",
-      type: "call"
+      title: "Setup Business Profile",
+      description: "Add your business information and upload documents for AI assistant",
+      icon: Building2,
+      action: () => navigate('/company'),
+      primary: !userStats.hasCompany
     },
     {
-      time: "11:15 AM", 
-      action: "Sarah Johnson added to CRM",
-      status: "New",
-      type: "crm"
+      title: "Add Clients",
+      description: "Start building your client database",
+      icon: Users,
+      action: () => navigate('/crm'),
+      primary: userStats.clients === 0
     },
     {
-      time: "12:00 PM",
-      action: "Appointment scheduled",
-      status: "Confirmed",
-      type: "booking"
-    },
-    {
-      time: "1:30 PM",
-      action: "Voicemail from Mike Davis",
-      status: "Pending",
-      type: "voicemail"
+      title: "Connect Calendar",
+      description: "Sync your Google Calendar for seamless scheduling",
+      icon: CalendarIcon,
+      action: () => navigate('/calendar'),
+      primary: userStats.events === 0
     }
   ];
+
+  const getUserDisplayName = () => {
+    return user?.email?.split('@')[0] || 'User';
+  };
+
+  const isNewUser = userStats.clients === 0 && userStats.events === 0 && !userStats.hasCompany;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 bg-muted rounded w-1/3"></div>
+            <div className="grid grid-cols-4 gap-6">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="h-32 bg-muted rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -96,21 +161,28 @@ export default function Dashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
-            Welcome back, {userName}
+            {getGreeting()}, {getUserDisplayName()}
           </h1>
           <p className="text-muted-foreground">
-            Here's take a look at your performance and analytics.
+            {isNewUser ? 
+              "Welcome to LuniVoice! Let's get you started with setting up your business profile." :
+              "Here's your business overview and performance analytics."
+            }
           </p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
-            <Card key={index} className="glass-card border-0 hover:bg-card/90 transition-all duration-300">
+            <Card 
+              key={index} 
+              className="glass-card border-0 hover:bg-card/90 transition-all duration-300 cursor-pointer"
+              onClick={stat.action}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <stat.icon className="w-8 h-8 text-muted-foreground" />
-                  <span className="text-sm font-medium text-primary">{stat.change}</span>
+                  <Button variant="ghost" size="sm">View</Button>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
@@ -124,61 +196,106 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Activity Chart and Quick Actions */}
+        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Performance Chart Placeholder */}
+          {/* Quick Actions / Setup */}
           <div className="lg:col-span-2">
-            <Card className="glass-card border-0 h-96">
+            <Card className="glass-card border-0">
               <CardHeader>
-                <CardTitle className="text-lg">Performance Analytics</CardTitle>
+                <CardTitle className="text-lg">
+                  {isNewUser ? "Get Started" : "Quick Actions"}
+                </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {currentTime.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                  {isNewUser ? 
+                    "Set up your business profile to get the most out of LuniVoice" :
+                    "Common tasks and shortcuts"
+                  }
                 </p>
               </CardHeader>
-              <CardContent className="h-full">
-                <div className="h-full flex items-center justify-center bg-muted/10 rounded-lg">
-                  <div className="text-center">
-                    <TrendingUp className="w-16 h-16 text-primary mx-auto mb-4" />
-                    <p className="text-lg font-semibold mb-2">Analytics Dashboard</p>
-                    <p className="text-sm text-muted-foreground">Interactive charts coming soon</p>
-                  </div>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-4">
+                  {quickActions.map((action, index) => (
+                    <div 
+                      key={index}
+                      className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                        action.primary ? 
+                        'border-primary bg-primary/5 hover:bg-primary/10' : 
+                        'border-muted hover:border-primary/20 hover:bg-muted/50'
+                      }`}
+                      onClick={action.action}
+                    >
+                      <div className="flex items-start gap-3">
+                        <action.icon className={`w-5 h-5 mt-1 ${action.primary ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <div className="flex-1">
+                          <h4 className="font-medium mb-1">{action.title}</h4>
+                          <p className="text-sm text-muted-foreground">{action.description}</p>
+                        </div>
+                        <Button variant={action.primary ? "default" : "outline"} size="sm">
+                          {action.primary ? "Setup" : "Go"}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Recent Activity */}
+          {/* Welcome Message / Recent Activity */}
           <div>
-            <Card className="glass-card border-0 h-96">
+            <Card className="glass-card border-0 h-fit">
               <CardHeader>
-                <CardTitle className="text-lg">Recent Activity</CardTitle>
+                <CardTitle className="text-lg">
+                  {isNewUser ? "Welcome to LuniVoice" : "System Status"}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {activities.map((activity, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors">
-                      <div className="text-xs text-muted-foreground min-w-[60px] mt-1">
-                        {activity.time}
+                {isNewUser ? (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <TrendingUp className="w-12 h-12 text-primary mx-auto mb-3" />
+                      <h3 className="font-semibold mb-2">Ready to transform your business?</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        LuniVoice helps you manage clients, automate tasks, and grow your business with AI assistance.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-primary" />
+                        <span>AI-powered voice assistant</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{activity.action}</p>
-                        <span className={`inline-block text-xs px-2 py-1 rounded-full mt-1 ${
-                          activity.status === 'Completed' ? 'bg-primary/20 text-primary' :
-                          activity.status === 'Pending' ? 'bg-warning/20 text-warning' :
-                          activity.status === 'New' ? 'bg-accent/20 text-accent' :
-                          'bg-muted/20 text-muted-foreground'
-                        }`}>
-                          {activity.status}
-                        </span>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-primary" />
+                        <span>Client relationship management</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-primary" />
+                        <span>Google Calendar integration</span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary mb-1">All Systems Online</div>
+                      <p className="text-sm text-muted-foreground">Your LuniVoice is ready</p>
+                    </div>
+                    <div className="space-y-2 pt-4">
+                      <div className="flex justify-between text-sm">
+                        <span>AI Assistant</span>
+                        <span className="text-green-500">Active</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Backend Sync</span>
+                        <span className="text-green-500">Connected</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Storage</span>
+                        <span className="text-green-500">Ready</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

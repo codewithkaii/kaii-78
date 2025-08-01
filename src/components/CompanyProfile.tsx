@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Building2, Globe, Upload, FileText, Trash2, Edit } from "lucide-react";
+import { Building2, Globe, Upload, FileText, Trash2, Edit, Brain, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthContext";
@@ -243,8 +244,8 @@ export default function CompanyProfile() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Company Profile</h1>
-          <p className="text-muted-foreground">Manage your business information and documents</p>
+          <h1 className="text-3xl font-bold mb-2">Business Profile</h1>
+          <p className="text-muted-foreground">Set up your business information and upload documents for your AI assistant</p>
         </div>
         {!isEditing && company && (
           <Button onClick={() => setIsEditing(true)}>
@@ -253,6 +254,14 @@ export default function CompanyProfile() {
           </Button>
         )}
       </div>
+
+      {/* AI Assistant Info */}
+      <Alert className="border-primary/20 bg-primary/5">
+        <Brain className="h-4 w-4 text-primary" />
+        <AlertDescription className="text-primary">
+          <span className="font-medium">AI Assistant Integration:</span> Upload business documents to help your AI assistant understand your company better and provide more personalized responses to clients.
+        </AlertDescription>
+      </Alert>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Company Information */}
@@ -377,21 +386,28 @@ export default function CompanyProfile() {
           </CardContent>
         </Card>
 
-        {/* Documents */}
+        {/* AI Documents */}
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Documents
+              <Brain className="w-5 h-5 text-primary" />
+              AI Assistant Documents
             </CardTitle>
+            <p className="text-sm text-muted-foreground">Upload documents to train your AI assistant about your business</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="file-upload" className="cursor-pointer">
-                <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                  <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    {uploading ? "Uploading..." : "Click to upload documents"}
+                <div className="border-2 border-dashed border-primary/30 rounded-lg p-6 text-center hover:border-primary/50 transition-colors bg-primary/5">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Sparkles className="w-6 h-6 text-primary" />
+                    <Upload className="w-6 h-6 text-primary" />
+                  </div>
+                  <p className="text-sm font-medium text-primary mb-1">
+                    {uploading ? "Uploading for AI training..." : "Upload Business Documents"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    PDFs, docs, brochures, service descriptions, etc.
                   </p>
                 </div>
                 <Input
@@ -400,31 +416,46 @@ export default function CompanyProfile() {
                   className="hidden"
                   onChange={handleFileUpload}
                   disabled={uploading}
+                  accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
                 />
               </Label>
             </div>
 
             <div className="space-y-2">
               {documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20">
-                  <div className="flex-1">
-                    <p className="font-medium truncate">{doc.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(doc.created_at).toLocaleDateString()} • 
-                      {(doc.file_size / 1024).toFixed(1)} KB
-                    </p>
+                <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/10">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="flex items-center gap-1">
+                      <FileText className="w-4 h-4 text-primary" />
+                      <Brain className="w-3 h-3 text-primary/70" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium truncate">{doc.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(doc.created_at).toLocaleDateString()} • 
+                        {(doc.file_size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-xs border-primary/20 text-primary">
+                      AI Ready
+                    </Badge>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => deleteDocument(doc.id, doc.file_url)}
+                    className="hover:bg-destructive/10 hover:text-destructive"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               ))}
               {documents.length === 0 && (
-                <p className="text-center text-muted-foreground py-4">No documents uploaded</p>
+                <div className="text-center py-6">
+                  <Brain className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-muted-foreground mb-1">No documents uploaded yet</p>
+                  <p className="text-xs text-muted-foreground">Upload documents to train your AI assistant</p>
+                </div>
               )}
             </div>
           </CardContent>
