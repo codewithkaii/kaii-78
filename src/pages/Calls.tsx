@@ -1,239 +1,354 @@
-import { useState } from "react";
-import { Phone, Play, Download, Filter, PhoneIncoming, PhoneOutgoing, PhoneMissed } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { AIOrb } from "@/components/AIOrb";
+import React, { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  Phone, 
+  PhoneCall, 
+  PhoneMissed, 
+  PhoneIncoming, 
+  PhoneOutgoing,
+  Filter,
+  Play,
+  Download,
+  Calendar,
+  Clock,
+  User,
+  Search
+} from 'lucide-react';
+import { AIOrb } from '@/components/AIOrb';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/AuthContext';
+import { toast } from 'sonner';
 
-export default function Calls() {
-  const [selectedCall, setSelectedCall] = useState<number | null>(null);
+const Calls = () => {
+  const [selectedCall, setSelectedCall] = useState(null);
+  const [calls, setCalls] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const { user } = useAuth();
 
-  const calls = [
-    {
-      id: 1,
-      contact: "Sarah Johnson",
-      phone: "+1 (555) 123-4567",
-      type: "incoming",
-      status: "completed",
-      duration: "15:32",
-      timestamp: "Today, 2:30 PM",
-      hasRecording: true,
-      hasTranscript: true,
-      summary: "Discussed project timeline and budget requirements. Sarah agreed to the proposal."
-    },
-    {
-      id: 2,
-      contact: "Mike Davis",
-      phone: "+1 (555) 987-6543", 
-      type: "outgoing",
-      status: "voicemail",
-      duration: "2:15",
-      timestamp: "Today, 11:15 AM",
-      hasRecording: true,
-      hasTranscript: false,
-      summary: "Left voicemail about follow-up meeting."
-    },
-    {
-      id: 3,
-      contact: "Unknown",
-      phone: "+1 (555) 456-7890",
-      type: "incoming",
-      status: "missed",
-      duration: "0:00",
-      timestamp: "Yesterday, 4:45 PM",
-      hasRecording: false,
-      hasTranscript: false,
-      summary: ""
+  useEffect(() => {
+    if (user) {
+      fetchCalls();
+      
+      // Set up real-time updates
+      const channel = supabase
+        .channel('call-logs-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'call_logs',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            fetchCalls();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  ];
+  }, [user]);
 
-  const getCallIcon = (type: string, status: string) => {
-    if (status === "missed") return <PhoneMissed className="w-4 h-4 text-red-500" />;
-    if (type === "incoming") return <PhoneIncoming className="w-4 h-4 text-blue-500" />;
-    return <PhoneOutgoing className="w-4 h-4 text-green-500" />;
+  const fetchCalls = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('call_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setCalls(data || []);
+    } catch (error) {
+      console.error('Error fetching calls:', error);
+      toast.error('Failed to load call logs');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getStatusBadge = (status: string) => {
-    const colors = {
-      completed: "bg-green-100 text-green-800",
-      missed: "bg-red-100 text-red-800", 
-      voicemail: "bg-yellow-100 text-yellow-800"
-    };
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
+  const filteredCalls = calls.filter(call => {
+    const matchesSearch = call.from_number?.includes(searchTerm) || 
+                         call.to_number?.includes(searchTerm) ||
+                         call.transcript?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || call.call_status === statusFilter;
+    const matchesType = typeFilter === 'all' || call.direction === typeFilter;
+
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const getCallIcon = (direction, status) => {
+    if (status === 'failed' || status === 'no-answer') return PhoneMissed;
+    if (direction === 'inbound') return PhoneIncoming;
+    if (direction === 'outbound') return PhoneOutgoing;
+    return Phone;
   };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-success text-success-foreground';
+      case 'failed':
+      case 'no-answer':
+        return 'bg-destructive text-destructive-foreground';
+      case 'busy':
+        return 'bg-warning text-warning-foreground';
+      case 'in-progress':
+        return 'bg-primary text-primary-foreground';
+      default:
+        return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading call logs...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Calls & Recordings</h1>
-          <p className="text-muted-foreground">Manage your call history and recordings</p>
-        </div>
-        <Button variant="outline" size="icon">
-          <Filter className="w-4 h-4" />
-        </Button>
-      </div>
-
+    <div className="container mx-auto p-6 space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Call List */}
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="all">
-            <TabsList>
-              <TabsTrigger value="all">All Calls</TabsTrigger>
-              <TabsTrigger value="incoming">Incoming</TabsTrigger>
-              <TabsTrigger value="outgoing">Outgoing</TabsTrigger>
-              <TabsTrigger value="missed">Missed</TabsTrigger>
-            </TabsList>
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold">Call History</h1>
+            <div className="flex gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search calls..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 w-64"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="no-answer">No Answer</SelectItem>
+                  <SelectItem value="busy">Busy</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="inbound">Incoming</SelectItem>
+                  <SelectItem value="outbound">Outgoing</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-            <TabsContent value="all" className="space-y-4">
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Phone className="w-5 h-5" />
-                    Call Log
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {calls.map((call) => (
+          <Card>
+            <CardContent className="p-0">
+              {filteredCalls.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Phone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No calls found</h3>
+                  <p className="text-muted-foreground">
+                    {calls.length === 0 
+                      ? "You haven't received any calls yet. Your AI assistant is ready to handle incoming calls."
+                      : "No calls match your current filters."
+                    }
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {filteredCalls.map((call) => {
+                    const Icon = getCallIcon(call.direction, call.call_status);
+                    return (
                       <div
                         key={call.id}
-                        className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                          selectedCall === call.id ? 'bg-primary/10 border-primary' : 'bg-muted/20 hover:bg-muted/30'
+                        className={`p-4 hover:bg-muted cursor-pointer transition-colors ${
+                          selectedCall?.id === call.id ? 'bg-muted' : ''
                         }`}
-                        onClick={() => setSelectedCall(call.id)}
+                        onClick={() => setSelectedCall(call)}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            {getCallIcon(call.type, call.status)}
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                              <Icon className="h-5 w-5 text-muted-foreground" />
+                            </div>
                             <div>
-                              <h4 className="font-medium">{call.contact}</h4>
-                              <p className="text-sm text-muted-foreground">{call.phone}</p>
+                              <div className="flex items-center space-x-2">
+                                <p className="font-medium">{call.from_number}</p>
+                                <Badge className={getStatusBadge(call.call_status)}>
+                                  {call.call_status}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {call.direction === 'inbound' ? `To: ${call.to_number}` : `From: ${call.to_number}`}
+                              </p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm text-muted-foreground">{call.timestamp}</p>
-                            <Badge className={`text-xs ${getStatusBadge(call.status)}`}>
-                              {call.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            Duration: {call.duration}
-                          </span>
-                          <div className="flex gap-2">
-                            {call.hasRecording && (
-                              <Button size="sm" variant="outline">
-                                <Play className="w-3 h-3 mr-1" />
-                                Play
-                              </Button>
-                            )}
-                            {call.hasTranscript && (
-                              <Button size="sm" variant="outline">
-                                <Download className="w-3 h-3 mr-1" />
-                                Transcript
-                              </Button>
-                            )}
+                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                              <span className="flex items-center">
+                                <Clock className="h-4 w-4 mr-1" />
+                                {formatDuration(call.duration_seconds)}
+                              </span>
+                              <span className="flex items-center">
+                                <Calendar className="h-4 w-4 mr-1" />
+                                {formatDate(call.created_at)}
+                              </span>
+                              {call.recording_url && (
+                                <div className="flex space-x-1">
+                                  <Button variant="ghost" size="sm" asChild>
+                                    <a href={call.recording_url} target="_blank" rel="noopener noreferrer">
+                                      <Play className="h-4 w-4" />
+                                    </a>
+                                  </Button>
+                                  <Button variant="ghost" size="sm" asChild>
+                                    <a href={call.recording_url} download>
+                                      <Download className="h-4 w-4" />
+                                    </a>
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Call Details */}
-        <div>
-          {selectedCall ? (
-            <Card className="glass-card">
+        <div className="space-y-6">
+          {selectedCall && (
+            <Card>
               <CardHeader>
-                <CardTitle>Call Details</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <User className="h-5 w-5" />
+                  <span>Call Details</span>
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                {(() => {
-                  const call = calls.find(c => c.id === selectedCall);
-                  if (!call) return null;
-                  
-                  return (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        {getCallIcon(call.type, call.status)}
-                        <div>
-                          <h3 className="font-semibold">{call.contact}</h3>
-                          <p className="text-sm text-muted-foreground">{call.phone}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm">Duration:</span>
-                          <span className="text-sm font-medium">{call.duration}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">Time:</span>
-                          <span className="text-sm font-medium">{call.timestamp}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">Status:</span>
-                          <Badge className={`text-xs ${getStatusBadge(call.status)}`}>
-                            {call.status}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      {call.hasRecording && (
-                        <div className="p-3 bg-muted/20 rounded-lg">
-                          <h4 className="font-medium mb-2">Recording</h4>
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline">
-                              <Play className="w-3 h-3 mr-1" />
-                              Play
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              <Download className="w-3 h-3 mr-1" />
-                              Download
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {call.summary && (
-                        <div>
-                          <h4 className="font-medium mb-2">AI Summary</h4>
-                          <p className="text-sm text-muted-foreground bg-muted/20 p-3 rounded">
-                            {call.summary}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {call.hasTranscript && (
-                        <Button className="w-full">
-                          View Full Transcript
-                        </Button>
-                      )}
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">From</label>
+                    <p className="text-lg font-medium">{selectedCall.from_number}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">To</label>
+                    <p className="text-lg">{selectedCall.to_number}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Duration</label>
+                    <p className="text-lg">{formatDuration(selectedCall.duration_seconds)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Time</label>
+                    <p className="text-lg">{formatDate(selectedCall.created_at)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Status</label>
+                    <Badge className={getStatusBadge(selectedCall.call_status)}>
+                      {selectedCall.call_status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Direction</label>
+                    <p className="text-lg capitalize">{selectedCall.direction}</p>
+                  </div>
+                </div>
+
+                {selectedCall.recording_url && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Recording</label>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={selectedCall.recording_url} target="_blank" rel="noopener noreferrer">
+                          <Play className="h-4 w-4 mr-2" />
+                          Play Recording
+                        </a>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={selectedCall.recording_url} download>
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </a>
+                      </Button>
                     </div>
-                  );
-                })()}
+                  </div>
+                )}
+
+                {selectedCall.transcript && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Transcript</label>
+                    <div className="p-3 bg-muted rounded-lg max-h-32 overflow-y-auto">
+                      <p className="text-sm">{selectedCall.transcript}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedCall.ai_summary && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">AI Summary</label>
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm">{selectedCall.ai_summary}</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          ) : (
-            <Card className="glass-card">
+          )}
+
+          {!selectedCall && (
+            <Card>
               <CardContent className="flex items-center justify-center h-64">
-                <p className="text-muted-foreground">Select a call to view details</p>
+                <div className="text-center">
+                  <PhoneCall className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground">Select a call to view details</h3>
+                </div>
               </CardContent>
             </Card>
           )}
         </div>
       </div>
 
-      {/* AI Orb */}
-      <AIOrb size="small" position="bottom-right" />
+      <AIOrb />
     </div>
   );
-}
+};
+
+export default Calls;
