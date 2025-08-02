@@ -62,7 +62,7 @@ const Calls = () => {
 
   const fetchCalls = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('call_logs')
         .select('*')
         .eq('user_id', user.id)
