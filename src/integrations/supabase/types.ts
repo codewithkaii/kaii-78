@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      call_logs: {
+        Row: {
+          ai_summary: string | null
+          call_sid: string
+          call_status: string
+          call_type: string | null
+          created_at: string
+          direction: string
+          duration_seconds: number | null
+          from_number: string
+          id: string
+          processed_at: string | null
+          recording_url: string | null
+          to_number: string
+          transcript: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          call_sid: string
+          call_status: string
+          call_type?: string | null
+          created_at?: string
+          direction: string
+          duration_seconds?: number | null
+          from_number: string
+          id?: string
+          processed_at?: string | null
+          recording_url?: string | null
+          to_number: string
+          transcript?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_summary?: string | null
+          call_sid?: string
+          call_status?: string
+          call_type?: string | null
+          created_at?: string
+          direction?: string
+          duration_seconds?: number | null
+          from_number?: string
+          id?: string
+          processed_at?: string | null
+          recording_url?: string | null
+          to_number?: string
+          transcript?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           company: string | null
@@ -226,6 +280,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_phone_numbers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          phone_number: string
+          twilio_sid: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          phone_number: string
+          twilio_sid: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          phone_number?: string
+          twilio_sid?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           avatar_url: string | null
@@ -237,6 +321,7 @@ export type Database = {
           id: string
           last_name: string | null
           onboarding_completed: boolean | null
+          phone_number_configured: boolean | null
           updated_at: string
           user_id: string
         }
@@ -250,6 +335,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           onboarding_completed?: boolean | null
+          phone_number_configured?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -263,6 +349,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           onboarding_completed?: boolean | null
+          phone_number_configured?: boolean | null
           updated_at?: string
           user_id?: string
         }
