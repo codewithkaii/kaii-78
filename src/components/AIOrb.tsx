@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { MessageCircle, Mic, X, Send } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MessageCircle, Mic, X, Send, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useConversation } from "@11labs/react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AIOrbProps {
   size?: "small" | "large";
@@ -12,25 +14,102 @@ interface AIOrbProps {
 export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [isListening, setIsListening] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<string[]>([]);
+  const { toast } = useToast();
+  
+  const conversation = useConversation({
+    onConnect: () => {
+      console.log("Connected to ElevenLabs");
+      toast({
+        title: "Voice Assistant Connected",
+        description: "You can now speak with LuniVoice AI",
+      });
+    },
+    onDisconnect: () => {
+      console.log("Disconnected from ElevenLabs");
+    },
+    onMessage: (message) => {
+      console.log("Message:", message);
+      if (message.message && message.message.trim()) {
+        setConversationHistory(prev => [...prev, `AI: ${message.message}`]);
+      }
+    },
+    onError: (error) => {
+      console.error("Conversation error:", error);
+      toast({
+        title: "Voice Error",
+        description: "There was an issue with the voice connection",
+        variant: "destructive",
+      });
+    },
+    overrides: {
+      agent: {
+        prompt: {
+          prompt: "You are LuniVoice, a helpful AI assistant for a business management platform. You help users manage their clients, schedule appointments, handle documents, and provide business insights. Be concise, friendly, and professional in your responses. Always offer practical suggestions and ask clarifying questions when needed.",
+        },
+        firstMessage: "Hello! I'm LuniVoice, your AI business assistant. How can I help you manage your business today?",
+        language: "en",
+      },
+      tts: {
+        voiceId: "9BWtsMINqrJLrRacOk9x" // Aria voice
+      },
+    },
+  });
   
   const orbSize = size === "large" ? "w-24 h-24" : "w-12 h-12";
   const positionClass = position === "center" 
     ? "fixed bottom-8 left-1/2 transform -translate-x-1/2" 
     : "fixed bottom-6 right-6";
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (message.trim()) {
-      // Here you would integrate with your AI service
-      console.log("Sending message:", message);
+      const userMessage = message;
+      setConversationHistory(prev => [...prev, `You: ${userMessage}`]);
       setMessage("");
+      
+      if (conversation.status !== "connected") {
+        toast({
+          title: "Not Connected",
+          description: "Please start the voice conversation first to send messages",
+          variant: "destructive",
+        });
+      }
+      // Note: ElevenLabs conversational AI handles text input through voice only
+      // For text-based interaction, you would need to implement a separate chat system
     }
   };
 
-  const toggleListening = () => {
-    setIsListening(!isListening);
-    // Here you would integrate with speech recognition
+  const toggleVoiceConversation = async () => {
+    try {
+      if (conversation.status === "connected") {
+        await conversation.endSession();
+      } else {
+        // Request microphone access first
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // For this demo, we'll use a public agent ID
+        // In production, you should create your own ElevenLabs agent
+        await conversation.startSession({ 
+          agentId: "sample-agent-id" // You need to replace this with your actual ElevenLabs agent ID
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling conversation:", error);
+      toast({
+        title: "Voice Error",
+        description: error instanceof Error ? error.message : "Failed to toggle voice conversation",
+        variant: "destructive",
+      });
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      if (conversation.status === "connected") {
+        conversation.endSession();
+      }
+    };
+  }, []);
 
   return (
     <>
@@ -53,6 +132,7 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
               transition-all duration-500 hover:scale-110
               group
               overflow-hidden
+              ${conversation.status === "connected" ? "animate-pulse" : ""}
             `}
             size="icon"
           >
@@ -60,9 +140,15 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
             <div className="absolute inset-2 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 blur-sm"></div>
             
             {/* Icon with holographic effect */}
-            <MessageCircle 
-              className={`${size === "large" ? "w-8 h-8" : "w-6 h-6"} relative z-10 text-white drop-shadow-[0_0_8px_rgba(0,255,136,0.8)]`} 
-            />
+            {conversation.status === "connected" ? (
+              <Mic 
+                className={`${size === "large" ? "w-8 h-8" : "w-6 h-6"} relative z-10 text-green-400 drop-shadow-[0_0_8px_rgba(0,255,136,0.8)]`} 
+              />
+            ) : (
+              <MessageCircle 
+                className={`${size === "large" ? "w-8 h-8" : "w-6 h-6"} relative z-10 text-white drop-shadow-[0_0_8px_rgba(0,255,136,0.8)]`} 
+              />
+            )}
             
             {/* Scanning line effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
@@ -96,11 +182,57 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
             </CardHeader>
             
             <CardContent className="flex-1 flex flex-col">
-              {/* Chat Area */}
-              <div className="flex-1 border rounded-lg p-4 mb-4 bg-muted/20 overflow-y-auto">
-                <div className="text-sm text-muted-foreground text-center">
-                  👋 Hi! I'm your AI assistant. How can I help you today?
+              {/* Connection Status */}
+              <div className="mb-4 p-2 rounded-lg bg-muted/20 text-center">
+                <div className="text-sm text-muted-foreground">
+                  Status: {conversation.status === "connected" ? "🟢 Connected" : "🔴 Disconnected"}
+                  {conversation.isSpeaking && " 🎤 Speaking..."}
                 </div>
+              </div>
+              
+              {/* Voice Controls */}
+              <div className="mb-4 flex justify-center">
+                <Button
+                  onClick={toggleVoiceConversation}
+                  variant={conversation.status === "connected" ? "destructive" : "default"}
+                  className="flex items-center gap-2"
+                >
+                  {conversation.status === "connected" ? (
+                    <>
+                      <MicOff className="w-4 h-4" />
+                      End Voice Chat
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-4 h-4" />
+                      Start Voice Chat
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              {/* Chat Area */}
+              <div className="flex-1 border rounded-lg p-4 mb-4 bg-muted/20 overflow-y-auto min-h-[200px]">
+                {conversationHistory.length === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center">
+                    👋 Hi! I'm LuniVoice, your AI business assistant. Click "Start Voice Chat" to begin speaking, or type a message below!
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {conversationHistory.map((msg, index) => (
+                      <div 
+                        key={index} 
+                        className={`text-sm p-2 rounded ${
+                          msg.startsWith('You:') 
+                            ? 'bg-primary/10 text-primary ml-4' 
+                            : 'bg-muted/40 mr-4'
+                        }`}
+                      >
+                        {msg}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               
               {/* Input Area */}
@@ -113,11 +245,16 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
                   className="flex-1"
                 />
                 <Button
-                  variant={isListening ? "destructive" : "outline"}
+                  variant={conversation.status === "connected" ? "secondary" : "outline"}
                   size="icon"
-                  onClick={toggleListening}
+                  onClick={toggleVoiceConversation}
+                  disabled={conversation.status === "connecting"}
                 >
-                  <Mic className="w-4 h-4" />
+                  {conversation.status === "connected" ? (
+                    <MicOff className="w-4 h-4" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
                 </Button>
                 <Button onClick={handleSendMessage} size="icon">
                   <Send className="w-4 h-4" />
