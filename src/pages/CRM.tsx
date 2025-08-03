@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AIOrb } from "@/components/AIOrb";
 import { useAuth } from "@/components/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { PlanGate } from "@/components/PlanGate";
 import { useToast } from "@/hooks/use-toast";
 import { useBackendSync } from "@/hooks/useBackendSync";
 

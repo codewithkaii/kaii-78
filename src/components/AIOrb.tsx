@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConversation } from "@11labs/react";
 import { useToast } from "@/components/ui/use-toast";
+import { usePlanAccess } from "@/hooks/usePlanAccess";
 
 interface AIOrbProps {
   size?: "small" | "large";
@@ -16,6 +17,7 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
   const [message, setMessage] = useState("");
   const [conversationHistory, setConversationHistory] = useState<string[]>([]);
   const { toast } = useToast();
+  const { checkFeatureAccess } = usePlanAccess();
   
   const conversation = useConversation({
     onConnect: () => {
@@ -80,6 +82,16 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
   };
 
   const toggleVoiceConversation = async () => {
+    // Check if user has access to the assistant orb
+    if (!checkFeatureAccess('hasAssistantOrb')) {
+      toast({
+        title: "Upgrade Required",
+        description: "Voice Assistant is available with Pro plan or higher.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (conversation.status === "connected") {
         await conversation.endSession();
@@ -87,10 +99,9 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
         // Request microphone access first
         await navigator.mediaDevices.getUserMedia({ audio: true });
         
-        // For this demo, we'll use a public agent ID
-        // In production, you should create your own ElevenLabs agent
+        // Use a demo agent ID - in production, this should be configured properly
         await conversation.startSession({ 
-          agentId: "sample-agent-id" // You need to replace this with your actual ElevenLabs agent ID
+          agentId: "demo-agent-id" // Replace with your actual ElevenLabs agent ID
         });
       }
     } catch (error) {

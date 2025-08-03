@@ -3,7 +3,7 @@ import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-const BACKEND_URL = 'https://lunivoice-userbackend-j71m.onrender.com';
+// Use native Supabase edge functions instead of external backend
 
 interface BackendUser {
   id: string;
@@ -44,14 +44,9 @@ export const useBackendSync = () => {
         .eq('user_id', user.id)
         .single();
 
-      // Sync to backend
-      const response = await fetch(`${BACKEND_URL}/api/users/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
+      // Use native Supabase edge function instead of external backend
+      const response = await supabase.functions.invoke('user-sync', {
+        body: {
           supabaseUserId: user.id,
           email: user.email,
           profile: {
@@ -63,14 +58,17 @@ export const useBackendSync = () => {
             googleCalendarConnected: profile?.google_calendar_connected || false,
             notifications: true
           }
-        })
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to sync with backend');
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to sync with backend');
       }
 
-      const backendUserData = await response.json();
+      const backendUserData = response.data;
       setBackendUser(backendUserData);
 
       // Update backend_user_id in Supabase if not set
@@ -103,17 +101,9 @@ export const useBackendSync = () => {
         .select('*')
         .eq('user_id', user.id);
 
-      await fetch(`${BACKEND_URL}/api/clients/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          supabaseUserId: user.id,
-          clients: clients || []
-        })
-      });
+      // Note: For now, clients are managed entirely in Supabase
+      // If needed, we can add a client-sync edge function later
+      console.log('Clients are managed in Supabase - no external sync needed');
     } catch (error) {
       console.error('Client sync error:', error);
     }
@@ -128,17 +118,9 @@ export const useBackendSync = () => {
         .select('*')
         .eq('user_id', user.id);
 
-      await fetch(`${BACKEND_URL}/api/events/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          supabaseUserId: user.id,
-          events: events || []
-        })
-      });
+      // Note: For now, events are managed entirely in Supabase
+      // If needed, we can add an events-sync edge function later
+      console.log('Events are managed in Supabase - no external sync needed');
     } catch (error) {
       console.error('Events sync error:', error);
     }
@@ -148,27 +130,14 @@ export const useBackendSync = () => {
     if (!user || !session) return;
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/calendar/google/connect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          supabaseUserId: user.id
-        })
+      // Use native Google Calendar integration through Supabase
+      // For now, direct users to manually connect via Google OAuth
+      toast({
+        title: "Google Calendar",
+        description: "Please use the Settings page to connect your Google Calendar directly.",
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to connect Google Calendar');
-      }
-
-      const { authUrl } = await response.json();
       
-      // Open Google OAuth in new window
-      window.open(authUrl, 'google-calendar', 'width=500,height=600');
-      
-      return authUrl;
+      return null;
     } catch (error) {
       console.error('Google Calendar connection error:', error);
       toast({
@@ -183,37 +152,15 @@ export const useBackendSync = () => {
     if (!user || !session) return;
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/calendar/events`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      });
+      // For now, events are managed directly in Supabase
+      // Future enhancement: Add Google Calendar sync edge function
+      const { data: events } = await supabase
+        .from('events')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('start_time', { ascending: true });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch calendar events');
-      }
-
-      const events = await response.json();
-      
-      // Sync events to Supabase
-      for (const event of events) {
-        await supabase
-          .from('events')
-          .upsert([{
-            user_id: user.id,
-            title: event.summary,
-            description: event.description,
-            start_time: event.start.dateTime,
-            end_time: event.end.dateTime,
-            google_calendar_id: event.id,
-            event_type: 'meeting'
-          }], {
-            onConflict: 'google_calendar_id,user_id'
-          });
-      }
-
-      return events;
+      return events || [];
     } catch (error) {
       console.error('Fetch calendar events error:', error);
     }
