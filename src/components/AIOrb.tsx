@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConversation } from "@11labs/react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { usePlanAccess } from "@/hooks/usePlanAccess";
 
@@ -99,9 +100,14 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
         // Request microphone access first
         await navigator.mediaDevices.getUserMedia({ audio: true });
         
-        // Use a demo agent ID - in production, this should be configured properly
+        // Use the Supabase edge function to get signed URL
+        const { data, error } = await supabase.functions.invoke('elevenlabs-agent');
+        if (error) {
+          throw new Error(error.message);
+        }
+        
         await conversation.startSession({ 
-          agentId: "demo-agent-id" // Replace with your actual ElevenLabs agent ID
+          agentId: data.signed_url // Use the signed URL from our edge function
         });
       }
     } catch (error) {
