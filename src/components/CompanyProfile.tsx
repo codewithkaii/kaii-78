@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthContext";
+import BusinessHours from "./BusinessHours";
 
 interface Company {
   id: string;
@@ -244,8 +245,8 @@ export default function CompanyProfile() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Business Profile</h1>
-          <p className="text-muted-foreground">Set up your business information and upload documents for your AI assistant</p>
+          <h1 className="text-3xl font-bold mb-2">Business Management</h1>
+          <p className="text-muted-foreground">Manage your company information, business hours, and AI assistant documents</p>
         </div>
         {!isEditing && company && (
           <Button onClick={() => setIsEditing(true)}>
@@ -259,11 +260,11 @@ export default function CompanyProfile() {
       <Alert className="border-primary/20 bg-primary/5">
         <Brain className="h-4 w-4 text-primary" />
         <AlertDescription className="text-primary">
-          <span className="font-medium">AI Assistant Integration:</span> Upload business documents to help your AI assistant understand your company better and provide more personalized responses to clients.
+          <span className="font-medium">AI Assistant Integration:</span> Set up your business information and upload documents to help your AI assistant provide more personalized responses to clients.
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-6">
         {/* Company Information */}
         <Card className="glass-card">
           <CardHeader>
@@ -385,6 +386,9 @@ export default function CompanyProfile() {
             )}
           </CardContent>
         </Card>
+
+        {/* Business Hours */}
+        <BusinessHours />
 
         {/* AI Documents */}
         <Card className="glass-card">

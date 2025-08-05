@@ -6,7 +6,8 @@ import {
   BarChart3, 
   Settings, 
   MessageSquare, 
-  Zap 
+  Zap,
+  Building2
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -30,6 +31,13 @@ const menuItems = [
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Automation", url: "/automation", icon: Zap },
   { title: "Messages", url: "/messages", icon: MessageSquare },
+];
+
+const businessItems = [
+  { title: "Company Profile", url: "/company", icon: Building2 },
+];
+
+const settingsItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -63,6 +71,48 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} end className={getNavCls}>
+                      <item.icon className="h-5 w-5" />
+                      {!collapsed && <span className="ml-3">{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className={collapsed ? 'hidden' : 'block'}>
+            Business
+          </SidebarGroupLabel>
+          
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {businessItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} end className={getNavCls}>
+                      <item.icon className="h-5 w-5" />
+                      {!collapsed && <span className="ml-3">{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className={collapsed ? 'hidden' : 'block'}>
+            Account
+          </SidebarGroupLabel>
+          
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {settingsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavCls}>
