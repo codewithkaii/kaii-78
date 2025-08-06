@@ -20,7 +20,7 @@ const Pricing = () => {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
+      const { data, error } = await supabase.functions.invoke('paddle-checkout', {
         body: { plan },
         headers: {
           Authorization: `Bearer ${session?.access_token}`,
@@ -29,7 +29,7 @@ const Pricing = () => {
 
       if (error) throw error;
 
-      // Open Stripe checkout in a new tab
+      // Open Paddle checkout in a new tab
       window.open(data.url, '_blank');
     } catch (error) {
       console.error('Error creating checkout:', error);
@@ -45,7 +45,7 @@ const Pricing = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal', {
+      const { data, error } = await supabase.functions.invoke('paddle-customer-portal', {
         headers: {
           Authorization: `Bearer ${session?.access_token}`,
         },

@@ -62,11 +62,38 @@ enabled = true
 port = 54327
 inspector_port = 54328
 
-[functions.stripe-webhook]
+[functions.paddle-webhook]
 verify_jwt = false
+
+[functions.paddle-checkout]
+verify_jwt = true
+
+[functions.paddle-customer-portal]
+verify_jwt = true
+
+[functions.paddle-check-subscription]
+verify_jwt = true
+
+[functions.text-to-speech]
+verify_jwt = true
+
+[functions.speech-to-text]
+verify_jwt = true
 
 [functions.handle-call]
 verify_jwt = false
 
 [functions.process-recording]
+verify_jwt = false
+
+[functions.elevenlabs-agent]
+verify_jwt = false
+
+[functions.send-notification]
+verify_jwt = false
+
+[functions.twilio-purchase-number]
+verify_jwt = false
+
+[functions.user-sync]
 verify_jwt = false

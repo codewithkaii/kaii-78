@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
+      const { data, error } = await supabase.functions.invoke('paddle-check-subscription', {
         headers: {
           Authorization: `Bearer ${userSession.access_token}`,
         },
