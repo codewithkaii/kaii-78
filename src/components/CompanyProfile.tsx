@@ -54,9 +54,13 @@ export default function CompanyProfile() {
   });
 
   useEffect(() => {
+    console.log('CompanyProfile useEffect - user:', user);
     if (user) {
       fetchCompanyData();
       fetchDocuments();
+    } else {
+      console.log('CompanyProfile: No user found, setting loading to false');
+      setLoading(false);
     }
   }, [user]);
 
