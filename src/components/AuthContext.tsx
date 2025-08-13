@@ -66,39 +66,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer subscription check to avoid deadlock
         if (session?.user) {
           setTimeout(() => {
-            checkSubscription(session);
+            if (mounted) checkSubscription(session);
           }, 0);
         } else {
           setSubscribed(false);
           setSubscriptionTier(null);
           setSubscriptionEnd(null);
         }
+        
         setLoading(false);
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) setLoading(false);
+      }
+    };
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+        
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            if (mounted) checkSubscription(session);
+          }, 0);
+        } else {
+          setSubscribed(false);
+          setSubscriptionTier(null);
+          setSubscriptionEnd(null);
+        }
+        
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          setLoading(false);
+        }
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setTimeout(() => {
-          checkSubscription(session);
-        }, 0);
-      }
-      setLoading(false);
-    });
+    initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
