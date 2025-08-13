@@ -17,13 +17,12 @@ import { useBackendSync } from "@/hooks/useBackendSync";
 interface Client {
   id: string;
   name: string;
-  email: string;
-  phone: string;
-  company: string;
-  tags: string[];
-  notes: string;
-  status: string;
-  last_contact: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export default function CRM() {
@@ -79,10 +78,11 @@ export default function CRM() {
       const { error } = await supabase
         .from('clients')
         .insert([{
-          ...newClient,
-          user_id: user.id,
-          tags: [],
-          last_contact: new Date().toISOString().split('T')[0]
+          name: newClient.name,
+          email: newClient.email || null,
+          phone: newClient.phone || null,
+          company: newClient.company || null,
+          user_id: user.id
         }]);
 
       if (error) throw error;
@@ -115,7 +115,7 @@ export default function CRM() {
 
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.company.toLowerCase().includes(searchTerm.toLowerCase())
+    (client.company && client.company.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const getStatusColor = (status: string) => {
@@ -273,13 +273,8 @@ export default function CRM() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 mt-2">
-                            {client.tags?.map((tag, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                            <Badge className={`text-xs ${getStatusColor(client.status)}`}>
-                              {client.status}
+                            <Badge className="text-xs bg-green-100 text-green-800">
+                              Active
                             </Badge>
                           </div>
                         </div>
@@ -335,31 +330,9 @@ export default function CRM() {
                         )}
                       </div>
                       
-                      {client.tags && client.tags.length > 0 && (
-                        <div>
-                          <h4 className="font-medium mb-2">Tags</h4>
-                          <div className="flex flex-wrap gap-1">
-                            {client.tags.map((tag, index) => (
-                              <Badge key={index} variant="outline">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {client.notes && (
-                        <div>
-                          <h4 className="font-medium mb-2">Notes</h4>
-                          <p className="text-sm text-muted-foreground bg-muted/20 p-3 rounded">
-                            {client.notes}
-                          </p>
-                        </div>
-                      )}
-                      
                       <div>
                         <p className="text-sm text-muted-foreground">
-                          Last contact: {client.last_contact ? new Date(client.last_contact).toLocaleDateString() : 'Never'}
+                          Added: {new Date(client.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       

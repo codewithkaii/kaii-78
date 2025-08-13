@@ -14,12 +14,12 @@ import { useBackendSync } from "@/hooks/useBackendSync";
 interface Event {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   start_time: string;
   end_time: string;
-  event_type: string;
-  attendees: string[];
-  google_calendar_id?: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export default function Calendar() {
@@ -166,13 +166,10 @@ export default function Calendar() {
                           <p className="text-sm text-muted-foreground">
                             {new Date(event.start_time).toLocaleTimeString()} - {new Date(event.end_time).toLocaleTimeString()}
                           </p>
-                          {event.google_calendar_id && (
-                            <Badge variant="outline" className="text-xs mt-1">Google</Badge>
-                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm">{event.attendees?.length || 0}</span>
+                          <span className="text-sm">0</span>
                         </div>
                       </div>
                     ))}
@@ -215,12 +212,9 @@ export default function Calendar() {
                           {new Date(event.start_time).toLocaleTimeString()} - {new Date(event.end_time).toLocaleTimeString()}
                         </p>
                       </div>
-                      {event.google_calendar_id && (
-                        <Badge variant="outline" className="text-xs">Google</Badge>
-                      )}
+                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
                 {events.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     No events scheduled. {!isGoogleConnected && "Connect Google Calendar to sync your events."}

@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
@@ -122,6 +155,39 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          start_time: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          start_time: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          start_time?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       "Supabase Table": {
         Row: {
           id: string
@@ -145,6 +211,42 @@ export type Database = {
           output_text?: string
           task_type?: string
           timestamp?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          backend_user_id: string | null
+          created_at: string
+          first_name: string | null
+          google_calendar_connected: boolean | null
+          id: string
+          last_name: string | null
+          onboarding_completed: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backend_user_id?: string | null
+          created_at?: string
+          first_name?: string | null
+          google_calendar_connected?: boolean | null
+          id?: string
+          last_name?: string | null
+          onboarding_completed?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backend_user_id?: string | null
+          created_at?: string
+          first_name?: string | null
+          google_calendar_connected?: boolean | null
+          id?: string
+          last_name?: string | null
+          onboarding_completed?: boolean | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
