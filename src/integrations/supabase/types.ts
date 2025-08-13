@@ -10,401 +10,33 @@ export type Database = {
   // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "12.2.3 (519615d)"
   }
   public: {
     Tables: {
-      business_hours: {
+      "Supabase Table": {
         Row: {
-          close_time: string | null
-          created_at: string
-          day_of_week: number
           id: string
-          is_open: boolean
-          open_time: string | null
-          updated_at: string
+          input_text: string
+          output_text: string
+          task_type: string
+          timestamp: string
           user_id: string
         }
         Insert: {
-          close_time?: string | null
-          created_at?: string
-          day_of_week: number
           id?: string
-          is_open?: boolean
-          open_time?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          close_time?: string | null
-          created_at?: string
-          day_of_week?: number
-          id?: string
-          is_open?: boolean
-          open_time?: string | null
-          updated_at?: string
+          input_text?: string
+          output_text?: string
+          task_type?: string
+          timestamp?: string
           user_id?: string
         }
-        Relationships: []
-      }
-      call_logs: {
-        Row: {
-          ai_summary: string | null
-          call_sid: string
-          call_status: string
-          call_type: string | null
-          created_at: string
-          direction: string
-          duration_seconds: number | null
-          from_number: string
-          id: string
-          processed_at: string | null
-          recording_url: string | null
-          to_number: string
-          transcript: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          ai_summary?: string | null
-          call_sid: string
-          call_status: string
-          call_type?: string | null
-          created_at?: string
-          direction: string
-          duration_seconds?: number | null
-          from_number: string
-          id?: string
-          processed_at?: string | null
-          recording_url?: string | null
-          to_number: string
-          transcript?: string | null
-          updated_at?: string
-          user_id: string
-        }
         Update: {
-          ai_summary?: string | null
-          call_sid?: string
-          call_status?: string
-          call_type?: string | null
-          created_at?: string
-          direction?: string
-          duration_seconds?: number | null
-          from_number?: string
           id?: string
-          processed_at?: string | null
-          recording_url?: string | null
-          to_number?: string
-          transcript?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      clients: {
-        Row: {
-          company: string | null
-          created_at: string
-          email: string | null
-          id: string
-          last_contact: string | null
-          name: string
-          notes: string | null
-          phone: string | null
-          status: string | null
-          tags: string[] | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          company?: string | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          last_contact?: string | null
-          name: string
-          notes?: string | null
-          phone?: string | null
-          status?: string | null
-          tags?: string[] | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          company?: string | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          last_contact?: string | null
-          name?: string
-          notes?: string | null
-          phone?: string | null
-          status?: string | null
-          tags?: string[] | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      companies: {
-        Row: {
-          address: string | null
-          created_at: string
-          description: string | null
-          email: string | null
-          id: string
-          industry: string | null
-          logo_url: string | null
-          name: string
-          phone: string | null
-          updated_at: string
-          user_id: string
-          website: string | null
-        }
-        Insert: {
-          address?: string | null
-          created_at?: string
-          description?: string | null
-          email?: string | null
-          id?: string
-          industry?: string | null
-          logo_url?: string | null
-          name: string
-          phone?: string | null
-          updated_at?: string
-          user_id: string
-          website?: string | null
-        }
-        Update: {
-          address?: string | null
-          created_at?: string
-          description?: string | null
-          email?: string | null
-          id?: string
-          industry?: string | null
-          logo_url?: string | null
-          name?: string
-          phone?: string | null
-          updated_at?: string
-          user_id?: string
-          website?: string | null
-        }
-        Relationships: []
-      }
-      documents: {
-        Row: {
-          company_id: string | null
-          created_at: string
-          description: string | null
-          file_size: number | null
-          file_type: string | null
-          file_url: string
-          id: string
-          name: string
-          user_id: string
-        }
-        Insert: {
-          company_id?: string | null
-          created_at?: string
-          description?: string | null
-          file_size?: number | null
-          file_type?: string | null
-          file_url: string
-          id?: string
-          name: string
-          user_id: string
-        }
-        Update: {
-          company_id?: string | null
-          created_at?: string
-          description?: string | null
-          file_size?: number | null
-          file_type?: string | null
-          file_url?: string
-          id?: string
-          name?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "documents_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      events: {
-        Row: {
-          attendees: string[] | null
-          created_at: string
-          description: string | null
-          end_time: string
-          event_type: string | null
-          google_calendar_id: string | null
-          id: string
-          start_time: string
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          attendees?: string[] | null
-          created_at?: string
-          description?: string | null
-          end_time: string
-          event_type?: string | null
-          google_calendar_id?: string | null
-          id?: string
-          start_time: string
-          title: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          attendees?: string[] | null
-          created_at?: string
-          description?: string | null
-          end_time?: string
-          event_type?: string | null
-          google_calendar_id?: string | null
-          id?: string
-          start_time?: string
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      subscribers: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          stripe_customer_id: string | null
-          subscribed: boolean
-          subscription_end: string | null
-          subscription_tier: string | null
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          stripe_customer_id?: string | null
-          subscribed?: boolean
-          subscription_end?: string | null
-          subscription_tier?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          stripe_customer_id?: string | null
-          subscribed?: boolean
-          subscription_end?: string | null
-          subscription_tier?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      user_phone_numbers: {
-        Row: {
-          created_at: string
-          id: string
-          is_active: boolean | null
-          phone_number: string
-          twilio_sid: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          phone_number: string
-          twilio_sid: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          phone_number?: string
-          twilio_sid?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_profiles: {
-        Row: {
-          avatar_url: string | null
-          backend_user_id: string | null
-          created_at: string
-          first_name: string | null
-          google_calendar_connected: boolean | null
-          google_refresh_token: string | null
-          id: string
-          last_name: string | null
-          onboarding_completed: boolean | null
-          phone_number_configured: boolean | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          backend_user_id?: string | null
-          created_at?: string
-          first_name?: string | null
-          google_calendar_connected?: boolean | null
-          google_refresh_token?: string | null
-          id?: string
-          last_name?: string | null
-          onboarding_completed?: boolean | null
-          phone_number_configured?: boolean | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          avatar_url?: string | null
-          backend_user_id?: string | null
-          created_at?: string
-          first_name?: string | null
-          google_calendar_connected?: boolean | null
-          google_refresh_token?: string | null
-          id?: string
-          last_name?: string | null
-          onboarding_completed?: boolean | null
-          phone_number_configured?: boolean | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          input_text?: string
+          output_text?: string
+          task_type?: string
+          timestamp?: string
           user_id?: string
         }
         Relationships: []
@@ -414,20 +46,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _user_id: string
-          _role: Database["public"]["Enums"]["app_role"]
-        }
-        Returns: boolean
-      }
-      is_admin_or_subscribed: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -554,8 +176,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "moderator", "user"],
-    },
+    Enums: {},
   },
 } as const
