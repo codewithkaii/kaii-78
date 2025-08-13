@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Phone, Bell, Shield, CreditCard, Mic, Globe, Palette } from "lucide-react";
+import { User, Phone, Bell, Shield, CreditCard, Mic, Globe, Palette, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AIOrb } from "@/components/AIOrb";
+import BusinessHours from "@/components/BusinessHours";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
   const [profile, setProfile] = useState({
@@ -24,12 +27,101 @@ export default function Settings() {
     emailReports: false
   });
 
+  const [selectedVoice, setSelectedVoice] = useState("9BWtsMINqrJLrRacOk9x");
+  const [selectedLanguage, setSelectedLanguage] = useState("en-US");
+  const [playingVoice, setPlayingVoice] = useState<string | null>(null);
+  const { toast } = useToast();
+
   const voices = [
-    { id: "aria", name: "Aria", description: "Professional and warm" },
-    { id: "roger", name: "Roger", description: "Confident and clear" },
-    { id: "sarah", name: "Sarah", description: "Friendly and approachable" },
-    { id: "charlie", name: "Charlie", description: "Energetic and upbeat" }
+    // Male voices
+    { id: "Fahco4VZzobUeiPqni1S", name: "Marcus", description: "Professional male voice", gender: "male", languages: ["en-US", "en-GB"] },
+    { id: "UgBBYS2sOqTuMpoF3BR0", name: "James", description: "Confident and clear male voice", gender: "male", languages: ["en-US", "en-GB"] },
+    // Female voices  
+    { id: "P7vsEyTOpZ6YUTulin8m", name: "Sophie", description: "Professional female voice", gender: "female", languages: ["en-US", "en-GB"] },
+    { id: "aMSt68OGf4xUZAnLpTU8", name: "Emma", description: "Friendly and approachable female voice", gender: "female", languages: ["en-US", "en-GB"] },
+    // Additional popular voices
+    { id: "9BWtsMINqrJLrRacOk9x", name: "Aria", description: "Professional and warm", gender: "female", languages: ["en-US", "en-GB", "es-ES", "fr-FR"] },
+    { id: "CwhRBWXzGAHq8TQ4Fs17", name: "Roger", description: "Confident and clear", gender: "male", languages: ["en-US", "en-GB"] },
+    { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah", description: "Friendly and approachable", gender: "female", languages: ["en-US", "en-GB"] },
+    { id: "IKne3meq5aSn9XLyUdCD", name: "Charlie", description: "Energetic and upbeat", gender: "male", languages: ["en-US", "en-GB"] }
   ];
+
+  const languages = [
+    { code: "en-US", name: "English (US)", flag: "🇺🇸" },
+    { code: "en-GB", name: "English (UK)", flag: "🇬🇧" },
+    { code: "es-ES", name: "Spanish", flag: "🇪🇸" },
+    { code: "fr-FR", name: "French", flag: "🇫🇷" },
+    { code: "de-DE", name: "German", flag: "🇩🇪" },
+    { code: "it-IT", name: "Italian", flag: "🇮🇹" },
+    { code: "pt-PT", name: "Portuguese", flag: "🇵🇹" },
+    { code: "ja-JP", name: "Japanese", flag: "🇯🇵" },
+    { code: "ko-KR", name: "Korean", flag: "🇰🇷" },
+    { code: "zh-CN", name: "Chinese", flag: "🇨🇳" }
+  ];
+
+  // Get compatible voices for selected language
+  const getCompatibleVoices = (languageCode: string) => {
+    return voices.filter(voice => 
+      voice.languages.includes(languageCode) || 
+      voice.languages.includes("en-US") // Fallback to English
+    );
+  };
+
+  // Auto-select appropriate voice based on language and gender preference
+  const selectVoiceForLanguage = (languageCode: string, genderPreference?: "male" | "female") => {
+    const compatibleVoices = getCompatibleVoices(languageCode);
+    
+    if (genderPreference) {
+      const genderVoices = compatibleVoices.filter(v => v.gender === genderPreference);
+      if (genderVoices.length > 0) {
+        return genderVoices[0].id;
+      }
+    }
+    
+    // Fallback to first compatible voice or default English voice
+    return compatibleVoices.length > 0 ? compatibleVoices[0].id : "9BWtsMINqrJLrRacOk9x";
+  };
+
+  const playVoicePreview = async (voiceId: string, voiceName: string) => {
+    setPlayingVoice(voiceId);
+    
+    try {
+      const sampleText = `Hello! I'm ${voiceName}. This is how I sound when speaking in your selected language.`;
+      
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: {
+          text: sampleText,
+          voice_id: voiceId,
+          model_id: 'eleven_multilingual_v2'
+        }
+      });
+
+      if (error) throw error;
+
+      // Play the audio
+      const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
+      audio.play();
+      
+      audio.onended = () => setPlayingVoice(null);
+      audio.onerror = () => {
+        setPlayingVoice(null);
+        toast({
+          title: "Playback Error",
+          description: "Failed to play voice preview",
+          variant: "destructive"
+        });
+      };
+      
+    } catch (error: any) {
+      console.error('Voice preview error:', error);
+      setPlayingVoice(null);
+      toast({
+        title: "Preview Error", 
+        description: "Failed to generate voice preview",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -113,34 +205,95 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <Label className="text-base font-medium">AI Voice Selection</Label>
-                <p className="text-sm text-muted-foreground mb-4">Choose the voice for your AI assistant</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {voices.map((voice) => (
-                    <div key={voice.id} className="p-4 border rounded-lg hover:bg-muted/30 cursor-pointer">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">{voice.name}</h4>
-                        <Button size="sm" variant="outline">Preview</Button>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{voice.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="language">Language</Label>
-                <Select defaultValue="en-US">
+                <Label htmlFor="language" className="text-base font-medium">Language</Label>
+                <p className="text-sm text-muted-foreground mb-4">Select your preferred language for voice interactions</p>
+                <Select 
+                  value={selectedLanguage} 
+                  onValueChange={(value) => {
+                    setSelectedLanguage(value);
+                    // Auto-select compatible voice when language changes
+                    const newVoice = selectVoiceForLanguage(value);
+                    setSelectedVoice(newVoice);
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="en-US">English (US)</SelectItem>
-                    <SelectItem value="en-GB">English (UK)</SelectItem>
-                    <SelectItem value="es-ES">Spanish</SelectItem>
-                    <SelectItem value="fr-FR">French</SelectItem>
+                    {languages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        <span className="flex items-center gap-2">
+                          <span>{lang.flag}</span>
+                          <span>{lang.name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label className="text-base font-medium">AI Voice Selection</Label>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Choose the voice for your AI assistant. Only voices compatible with your selected language are shown.
+                </p>
+                <div className="grid grid-cols-1 gap-3">
+                  {getCompatibleVoices(selectedLanguage).map((voice) => (
+                    <div 
+                      key={voice.id} 
+                      className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                        selectedVoice === voice.id 
+                          ? 'border-primary bg-primary/5' 
+                          : 'hover:bg-muted/30'
+                      }`}
+                      onClick={() => setSelectedVoice(voice.id)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{voice.name}</h4>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            voice.gender === 'male' 
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              : 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200'
+                          }`}>
+                            {voice.gender}
+                          </span>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playVoicePreview(voice.id, voice.name);
+                          }}
+                          disabled={playingVoice === voice.id}
+                        >
+                          {playingVoice === voice.id ? (
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                              Playing
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <Play className="w-3 h-3" />
+                              Preview
+                            </div>
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{voice.description}</p>
+                      <div className="flex items-center gap-1 mt-2">
+                        <span className="text-xs text-muted-foreground">Supports:</span>
+                        {voice.languages.map((lang, idx) => (
+                          <span key={lang} className="text-xs">
+                            {languages.find(l => l.code === lang)?.flag || '🌐'}
+                            {idx < voice.languages.length - 1 && ', '}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
               
               <div>
@@ -224,40 +377,16 @@ export default function Settings() {
 
         {/* Business Settings */}
         <TabsContent value="business" className="space-y-6">
+          <BusinessHours />
+          
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Phone className="w-5 h-5" />
-                Business Configuration
+                <Globe className="w-5 h-5" />
+                Regional Settings
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="businessHours">Business Hours</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <Select defaultValue="9:00">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Open" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="8:00">8:00 AM</SelectItem>
-                      <SelectItem value="9:00">9:00 AM</SelectItem>
-                      <SelectItem value="10:00">10:00 AM</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select defaultValue="17:00">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Close" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="16:00">4:00 PM</SelectItem>
-                      <SelectItem value="17:00">5:00 PM</SelectItem>
-                      <SelectItem value="18:00">6:00 PM</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
               <div>
                 <Label htmlFor="timezone">Timezone</Label>
                 <Select defaultValue="america/new_york">
@@ -265,15 +394,33 @@ export default function Settings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="america/new_york">Eastern Time</SelectItem>
-                    <SelectItem value="america/chicago">Central Time</SelectItem>
-                    <SelectItem value="america/denver">Mountain Time</SelectItem>
-                    <SelectItem value="america/los_angeles">Pacific Time</SelectItem>
+                    <SelectItem value="america/new_york">🇺🇸 Eastern Time (UTC-5)</SelectItem>
+                    <SelectItem value="america/chicago">🇺🇸 Central Time (UTC-6)</SelectItem>
+                    <SelectItem value="america/denver">🇺🇸 Mountain Time (UTC-7)</SelectItem>
+                    <SelectItem value="america/los_angeles">🇺🇸 Pacific Time (UTC-8)</SelectItem>
+                    <SelectItem value="europe/london">🇬🇧 Greenwich Mean Time (UTC+0)</SelectItem>
+                    <SelectItem value="europe/paris">🇫🇷 Central European Time (UTC+1)</SelectItem>
+                    <SelectItem value="asia/tokyo">🇯🇵 Japan Standard Time (UTC+9)</SelectItem>
+                    <SelectItem value="australia/sydney">🇦🇺 Australian Eastern Time (UTC+10)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
-              <Button>Save Business Settings</Button>
+              <div>
+                <Label htmlFor="dateFormat">Date Format</Label>
+                <Select defaultValue="mm/dd/yyyy">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mm/dd/yyyy">MM/DD/YYYY (US)</SelectItem>
+                    <SelectItem value="dd/mm/yyyy">DD/MM/YYYY (UK/EU)</SelectItem>
+                    <SelectItem value="yyyy-mm-dd">YYYY-MM-DD (ISO)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <Button>Save Regional Settings</Button>
             </CardContent>
           </Card>
         </TabsContent>
