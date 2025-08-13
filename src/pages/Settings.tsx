@@ -96,18 +96,38 @@ export default function Settings() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('TTS API error:', error);
+        throw new Error(error.message || 'Text-to-speech service unavailable');
+      }
+
+      if (!data?.audioContent) {
+        throw new Error('No audio content received from service');
+      }
 
       // Play the audio
       const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
-      audio.play();
+      
+      audio.oncanplaythrough = () => {
+        audio.play().catch((playError) => {
+          console.error('Audio play error:', playError);
+          setPlayingVoice(null);
+          toast({
+            title: "Playback Error",
+            description: "Unable to play audio. Please check your browser settings.",
+            variant: "destructive"
+          });
+        });
+      };
       
       audio.onended = () => setPlayingVoice(null);
-      audio.onerror = () => {
+      
+      audio.onerror = (audioError) => {
+        console.error('Audio error:', audioError);
         setPlayingVoice(null);
         toast({
-          title: "Playback Error",
-          description: "Failed to play voice preview",
+          title: "Audio Error",
+          description: "Failed to load audio preview",
           variant: "destructive"
         });
       };
@@ -115,9 +135,20 @@ export default function Settings() {
     } catch (error: any) {
       console.error('Voice preview error:', error);
       setPlayingVoice(null);
+      
+      // More specific error messages
+      let errorMessage = "Voice preview is temporarily unavailable";
+      if (error.message?.includes('voice_limit_reached')) {
+        errorMessage = "Voice service limit reached. Preview unavailable.";
+      } else if (error.message?.includes('unauthorized')) {
+        errorMessage = "Voice service authentication error";
+      } else if (error.message?.includes('network')) {
+        errorMessage = "Network error. Please check your connection.";
+      }
+      
       toast({
-        title: "Preview Error", 
-        description: "Failed to generate voice preview",
+        title: "Preview Unavailable", 
+        description: errorMessage,
         variant: "destructive"
       });
     }
