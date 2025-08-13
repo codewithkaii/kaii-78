@@ -15,22 +15,20 @@ import BusinessHours from "./BusinessHours";
 interface Company {
   id: string;
   name: string;
-  website: string;
-  industry: string;
-  description: string;
-  phone: string;
-  email: string;
-  address: string;
-  logo_url: string;
+  website: string | null;
+  industry: string | null;
+  description: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
 }
 
 interface Document {
   id: string;
   name: string;
   file_url: string;
-  file_type: string;
-  file_size: number;
-  description: string;
+  file_type: string | null;
+  file_size: number | null;
   created_at: string;
 }
 
@@ -175,12 +173,10 @@ export default function CompanyProfile() {
         .from('documents')
         .insert([{
           user_id: user.id,
-          company_id: company?.id,
           name: file.name,
           file_url: publicUrl,
           file_type: file.type,
-          file_size: file.size,
-          description: ""
+          file_size: file.size
         }]);
 
       if (dbError) throw dbError;
@@ -441,7 +437,7 @@ export default function CompanyProfile() {
                       <p className="font-medium truncate">{doc.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(doc.created_at).toLocaleDateString()} • 
-                        {(doc.file_size / 1024).toFixed(1)} KB
+                        {doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} KB` : 'Unknown size'}
                       </p>
                     </div>
                     <Badge variant="outline" className="text-xs border-primary/20 text-primary">
