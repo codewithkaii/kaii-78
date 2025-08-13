@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      automation_rules: {
+        Row: {
+          action_config: Json
+          action_type: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name: string
+          trigger_condition: Json
+          trigger_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_config: Json
+          action_type: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          trigger_condition: Json
+          trigger_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_config?: Json
+          action_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          trigger_condition?: Json
+          trigger_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       business_hours: {
         Row: {
           close_time: string | null
@@ -42,6 +81,51 @@ export type Database = {
           id?: string
           is_open?: boolean
           open_time?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      call_logs: {
+        Row: {
+          ai_summary: string | null
+          call_direction: string
+          call_status: string
+          caller_number: string | null
+          created_at: string
+          duration: number | null
+          id: string
+          phone_number: string
+          recording_url: string | null
+          transcript: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          call_direction: string
+          call_status: string
+          caller_number?: string | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          phone_number: string
+          recording_url?: string | null
+          transcript?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_summary?: string | null
+          call_direction?: string
+          call_status?: string
+          caller_number?: string | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          phone_number?: string
+          recording_url?: string | null
+          transcript?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -188,6 +272,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          is_read: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       "Supabase Table": {
         Row: {
           id: string
@@ -211,6 +328,36 @@ export type Database = {
           output_text?: string
           task_type?: string
           timestamp?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_phone_numbers: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          phone_number: string
+          twilio_sid: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          phone_number: string
+          twilio_sid?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          phone_number?: string
+          twilio_sid?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -248,6 +395,84 @@ export type Database = {
           onboarding_completed?: boolean | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      voice_messages: {
+        Row: {
+          ai_response: string | null
+          caller_number: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          recording_url: string
+          replied_at: string | null
+          transcript: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_response?: string | null
+          caller_number: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          recording_url: string
+          replied_at?: string | null
+          transcript?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_response?: string | null
+          caller_number?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          recording_url?: string
+          replied_at?: string | null
+          transcript?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      voice_settings: {
+        Row: {
+          created_at: string
+          id: string
+          language: string | null
+          max_renames: number | null
+          personality_prompt: string | null
+          renames_used: number | null
+          updated_at: string
+          user_id: string
+          voice_id: string
+          voice_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string | null
+          max_renames?: number | null
+          personality_prompt?: string | null
+          renames_used?: number | null
+          updated_at?: string
+          user_id: string
+          voice_id?: string
+          voice_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string | null
+          max_renames?: number | null
+          personality_prompt?: string | null
+          renames_used?: number | null
+          updated_at?: string
+          user_id?: string
+          voice_id?: string
+          voice_name?: string | null
         }
         Relationships: []
       }
