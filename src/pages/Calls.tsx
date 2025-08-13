@@ -14,15 +14,20 @@ import AuthRequired from '@/components/AuthRequired';
 
 interface CallLog {
   id: string;
-  phone_number: string;
-  caller_number: string;
-  call_direction: string;
+  call_sid: string;
+  from_number: string;
+  to_number: string;
   call_status: string;
-  duration: number;
-  recording_url: string | null;
-  transcript: string | null;
-  ai_summary: string | null;
+  direction: string;
+  duration_seconds: number;
+  recording_url?: string;
+  transcript?: string;
+  ai_summary?: string;
   created_at: string;
+  updated_at: string;
+  user_id: string;
+  call_type?: string;
+  processed_at?: string;
 }
 
 export default function Calls() {
@@ -77,13 +82,13 @@ export default function Calls() {
 
   const filteredCalls = calls.filter(call => {
     const matchesSearch = 
-      call.caller_number?.includes(searchTerm) ||
-      call.phone_number?.includes(searchTerm) ||
+      call.from_number?.includes(searchTerm) ||
+      call.to_number?.includes(searchTerm) ||
       call.transcript?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       call.ai_summary?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || call.call_status === statusFilter;
-    const matchesType = typeFilter === 'all' || call.call_direction === typeFilter;
+    const matchesType = typeFilter === 'all' || call.direction === typeFilter;
 
     return matchesSearch && matchesStatus && matchesType;
   });
@@ -125,7 +130,7 @@ export default function Calls() {
   };
 
   if (!user) {
-    return <AuthRequired feature="Call History" />;
+    return <AuthRequired title="Call History" description="Please sign in to view your call history and recordings." />;
   }
 
   if (loading) {
@@ -230,10 +235,10 @@ export default function Calls() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {getCallIcon(call.call_direction, call.call_status)}
+                      {getCallIcon(call.direction, call.call_status)}
                       <div>
                         <p className="font-medium">
-                          {call.call_direction === 'inbound' ? call.caller_number : call.phone_number}
+                          {call.direction === 'inbound' ? call.from_number : call.to_number}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {formatDate(call.created_at)}
@@ -243,7 +248,7 @@ export default function Calls() {
                     <div className="flex flex-col items-end gap-1">
                       {getStatusBadge(call.call_status)}
                       <p className="text-sm text-muted-foreground">
-                        {formatDuration(call.duration)}
+                        {formatDuration(call.duration_seconds)}
                       </p>
                     </div>
                   </div>
@@ -280,24 +285,24 @@ export default function Calls() {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Call Details</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">From</p>
-                      <p className="font-medium">{selectedCall.caller_number}</p>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">From</p>
+                        <p className="font-medium">{selectedCall.from_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">To</p>
+                        <p className="font-medium">{selectedCall.to_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Duration</p>
+                        <p className="font-medium">{formatDuration(selectedCall.duration_seconds)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Status</p>
+                        {getStatusBadge(selectedCall.call_status)}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-muted-foreground">To</p>
-                      <p className="font-medium">{selectedCall.phone_number}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Duration</p>
-                      <p className="font-medium">{formatDuration(selectedCall.duration)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Status</p>
-                      {getStatusBadge(selectedCall.call_status)}
-                    </div>
-                  </div>
                 </div>
 
                 <Separator />

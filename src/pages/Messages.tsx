@@ -16,13 +16,17 @@ import { toast } from 'sonner';
 
 interface VoiceMessage {
   id: string;
-  caller_number: string;
-  recording_url: string;
-  transcript: string | null;
-  ai_response: string | null;
-  is_read: boolean;
-  replied_at: string | null;
+  from_number: string;
+  to_number: string;
+  message_text: string;
+  audio_url?: string;
+  transcript?: string;
+  ai_response?: string;
   created_at: string;
+  updated_at: string;
+  user_id: string;
+  message_type?: string;
+  processed_at?: string;
 }
 
 export default function Messages() {
@@ -61,14 +65,32 @@ export default function Messages() {
     if (!user) return;
     
     try {
+      // For now, using call_logs as placeholder until voice_messages table exists
       const { data, error } = await supabase
-        .from('voice_messages')
+        .from('call_logs')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      // Transform call logs to voice message format
+      const transformedMessages = (data || []).map(call => ({
+        id: call.id,
+        from_number: call.from_number,
+        to_number: call.to_number,
+        message_text: call.transcript || 'No transcript available',
+        audio_url: call.recording_url,
+        transcript: call.transcript,
+        ai_response: call.ai_summary,
+        created_at: call.created_at,
+        updated_at: call.updated_at,
+        user_id: call.user_id,
+        message_type: 'voice',
+        processed_at: call.processed_at
+      }));
+      
+      setMessages(transformedMessages);
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
@@ -77,22 +99,8 @@ export default function Messages() {
   };
 
   const markAsRead = async (messageId: string) => {
-    try {
-      const { error } = await supabase
-        .from('voice_messages')
-        .update({ is_read: true })
-        .eq('id', messageId);
-
-      if (error) throw error;
-      
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === messageId ? { ...msg, is_read: true } : msg
-        )
-      );
-    } catch (error) {
-      console.error('Error marking message as read:', error);
-    }
+    // Placeholder - would update voice_messages table when it exists
+    console.log('Marking message as read:', messageId);
   };
 
   const sendReply = async () => {
@@ -104,22 +112,14 @@ export default function Messages() {
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: { 
           text: replyText,
-          caller_number: selectedMessage.caller_number 
+          caller_number: selectedMessage.from_number 
         }
       });
 
       if (error) throw error;
 
-      // Update message with reply
-      const { error: updateError } = await supabase
-        .from('voice_messages')
-        .update({ 
-          ai_response: replyText,
-          replied_at: new Date().toISOString()
-        })
-        .eq('id', selectedMessage.id);
-
-      if (updateError) throw updateError;
+      // Update message with reply - placeholder
+      console.log('Would update message with reply:', replyText);
 
       toast.success('Reply sent successfully!');
       setReplyText('');
@@ -129,8 +129,7 @@ export default function Messages() {
       if (selectedMessage) {
         setSelectedMessage({
           ...selectedMessage,
-          ai_response: replyText,
-          replied_at: new Date().toISOString()
+          ai_response: replyText
         });
       }
     } catch (error) {
@@ -143,16 +142,11 @@ export default function Messages() {
 
   const filteredMessages = messages.filter(message => {
     const matchesSearch = 
-      message.caller_number?.includes(searchTerm) ||
+      message.from_number?.includes(searchTerm) ||
       message.transcript?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       message.ai_response?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = 
-      statusFilter === 'all' ||
-      (statusFilter === 'unread' && !message.is_read) ||
-      (statusFilter === 'read' && message.is_read) ||
-      (statusFilter === 'replied' && message.replied_at) ||
-      (statusFilter === 'unreplied' && !message.replied_at);
+    const matchesStatus = statusFilter === 'all'; // Simplified for now
 
     return matchesSearch && matchesStatus;
   });
@@ -163,13 +157,11 @@ export default function Messages() {
 
   const handleMessageSelect = (message: VoiceMessage) => {
     setSelectedMessage(message);
-    if (!message.is_read) {
-      markAsRead(message.id);
-    }
+    markAsRead(message.id);
   };
 
   if (!user) {
-    return <AuthRequired feature="Voice Messages" />;
+    return <AuthRequired title="Voice Messages" description="Please sign in to view and manage your voice messages." />;
   }
 
   if (loading) {
@@ -256,19 +248,16 @@ export default function Messages() {
                     selectedMessage?.id === message.id 
                       ? 'bg-primary/10 border-primary' 
                       : 'hover:bg-muted/50'
-                  } ${!message.is_read ? 'border-l-4 border-l-primary' : ''}`}
+                  }`}
                   onClick={() => handleMessageSelect(message)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col items-center gap-1">
                         <Phone className="h-4 w-4" />
-                        {!message.is_read && (
-                          <div className="w-2 h-2 bg-primary rounded-full" />
-                        )}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium">{message.caller_number}</p>
+                        <p className="font-medium">{message.from_number}</p>
                         <p className="text-sm text-muted-foreground">
                           {formatDate(message.created_at)}
                         </p>
@@ -280,7 +269,7 @@ export default function Messages() {
                       </div>
                     </div>
                     <div className="flex flex-col gap-1">
-                      {message.replied_at && (
+                      {message.ai_response && (
                         <Badge variant="secondary" className="text-xs">
                           Replied
                         </Badge>
@@ -313,7 +302,7 @@ export default function Messages() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">From</p>
-                      <p className="font-medium">{selectedMessage.caller_number}</p>
+                      <p className="font-medium">{selectedMessage.from_number}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Received</p>
@@ -349,8 +338,7 @@ export default function Messages() {
                     <h4 className="font-semibold mb-2 flex items-center gap-2">
                       Your Reply
                       <Badge variant="secondary" className="text-xs">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {selectedMessage.replied_at && formatDate(selectedMessage.replied_at)}
+                        Sent
                       </Badge>
                     </h4>
                     <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">

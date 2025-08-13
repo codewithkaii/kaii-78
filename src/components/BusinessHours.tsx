@@ -61,7 +61,7 @@ export default function BusinessHours() {
       if (data && data.length > 0) {
         const existingHours = data.map(hour => ({
           id: hour.id,
-          day_of_week: parseInt(hour.day_of_week),
+          day_of_week: hour.day_of_week,
           is_open: hour.is_open,
           open_time: hour.open_time || '09:00',
           close_time: hour.close_time || '17:00'
@@ -103,7 +103,7 @@ export default function BusinessHours() {
       // Insert new hours
       const hoursToInsert = businessHours.map(hour => ({
         user_id: user.id,
-        day_of_week: hour.day_of_week.toString(),
+        day_of_week: hour.day_of_week,
         is_open: hour.is_open,
         open_time: hour.is_open ? hour.open_time : null,
         close_time: hour.is_open ? hour.close_time : null
