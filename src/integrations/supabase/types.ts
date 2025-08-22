@@ -14,7 +14,141 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      business_hours: {
+        Row: {
+          close_time: string | null
+          created_at: string
+          day_of_week: number
+          id: string
+          is_open: boolean
+          open_time: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          close_time?: string | null
+          created_at?: string
+          day_of_week: number
+          id?: string
+          is_open?: boolean
+          open_time?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          close_time?: string | null
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          is_open?: boolean
+          open_time?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          address: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          industry: string | null
+          name: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          created_at: string
+          file_size: number
+          file_type: string
+          file_url: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_size: number
+          file_type: string
+          file_url: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_size?: number
+          file_type?: string
+          file_url?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
