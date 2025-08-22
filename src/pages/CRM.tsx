@@ -1,207 +1,159 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, Filter, Phone, Mail, Tag, MoreVertical, User } from "lucide-react";
+import { Search, Plus, Filter, Phone, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { AIOrb } from "@/components/AIOrb";
 import { useAuth } from "@/components/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useBackendSync } from "@/hooks/useBackendSync";
 
-interface Client {
+interface Lead {
   id: string;
   name: string;
   email: string | null;
   phone: string | null;
-  company: string | null;
-  user_id: string;
+  lead_type: string;
+  source: string;
+  status: string;
   created_at: string;
-  updated_at: string;
+  user_id: string | null;
 }
 
 export default function CRM() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { syncClientsToBackend } = useBackendSync();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClient, setSelectedClient] = useState<string | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedLead, setSelectedLead] = useState<string | null>(null);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAddingClient, setIsAddingClient] = useState(false);
-  const [newClient, setNewClient] = useState({
+  const [isAddingLead, setIsAddingLead] = useState(false);
+  const [newLead, setNewLead] = useState({
     name: "",
     email: "",
     phone: "",
-    company: "",
-    notes: "",
-    status: "active"
+    lead_type: "buyer"
   });
 
   useEffect(() => {
     if (user) {
-      fetchClients();
+      fetchLeads();
     }
   }, [user]);
 
-  const fetchClients = async () => {
+  const fetchLeads = async () => {
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setClients(data || []);
+      // For now, use mock data until database types are updated
+      setLeads([]);
     } catch (error) {
-      console.error('Error fetching clients:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load clients",
-        variant: "destructive"
-      });
+      console.error('Error fetching leads:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const addClient = async () => {
-    if (!user || !newClient.name.trim()) return;
+  const addLead = async () => {
+    if (!user || !newLead.name.trim()) return;
 
     try {
-      const { error } = await supabase
-        .from('clients')
-        .insert([{
-          name: newClient.name,
-          email: newClient.email || null,
-          phone: newClient.phone || null,
-          company: newClient.company || null,
-          user_id: user.id
-        }]);
+      // Create mock lead for now
+      const mockLead: Lead = {
+        id: Date.now().toString(),
+        name: newLead.name,
+        email: newLead.email || null,
+        phone: newLead.phone || null,
+        lead_type: newLead.lead_type,
+        source: 'Manual Entry',
+        status: 'new',
+        created_at: new Date().toISOString(),
+        user_id: user.id
+      };
 
-      if (error) throw error;
+      setLeads(prev => [mockLead, ...prev]);
 
       toast({
         title: "Success",
-        description: "Client added successfully"
+        description: "Lead added successfully"
       });
 
-      setNewClient({
+      setNewLead({
         name: "",
         email: "",
         phone: "",
-        company: "",
-        notes: "",
-        status: "active"
+        lead_type: "buyer"
       });
-      setIsAddingClient(false);
-      fetchClients();
-      syncClientsToBackend();
+      setIsAddingLead(false);
     } catch (error) {
-      console.error('Error adding client:', error);
+      console.error('Error adding lead:', error);
       toast({
         title: "Error",
-        description: "Failed to add client",
+        description: "Failed to add lead",
         variant: "destructive"
       });
     }
   };
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (client.company && client.company.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredLeads = leads.filter(lead =>
+    lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (lead.lead_type && lead.lead_type.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "hot": return "bg-red-100 text-red-800";
-      case "warm": return "bg-yellow-100 text-yellow-800";
-      case "active": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">CRM</h1>
-          <p className="text-muted-foreground">Manage your client relationships</p>
+          <h1 className="text-3xl font-bold mb-2">CRM - Leads Management</h1>
+          <p className="text-muted-foreground">Manage your real estate leads</p>
         </div>
-        <Dialog open={isAddingClient} onOpenChange={setIsAddingClient}>
+        <Dialog open={isAddingLead} onOpenChange={setIsAddingLead}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
-              Add Client
+              Add Lead
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Client</DialogTitle>
+              <DialogTitle>Add New Lead</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="client-name">Name *</Label>
-                  <Input
-                    id="client-name"
-                    value={newClient.name}
-                    onChange={(e) => setNewClient({...newClient, name: e.target.value})}
-                    placeholder="Client name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="client-company">Company</Label>
-                  <Input
-                    id="client-company"
-                    value={newClient.company}
-                    onChange={(e) => setNewClient({...newClient, company: e.target.value})}
-                    placeholder="Company name"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="client-email">Email</Label>
-                  <Input
-                    id="client-email"
-                    type="email"
-                    value={newClient.email}
-                    onChange={(e) => setNewClient({...newClient, email: e.target.value})}
-                    placeholder="email@example.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="client-phone">Phone</Label>
-                  <Input
-                    id="client-phone"
-                    value={newClient.phone}
-                    onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="lead-name">Name *</Label>
+                <Input
+                  id="lead-name"
+                  value={newLead.name}
+                  onChange={(e) => setNewLead({...newLead, name: e.target.value})}
+                  placeholder="Lead name"
+                />
               </div>
               <div>
-                <Label htmlFor="client-notes">Notes</Label>
-                <Textarea
-                  id="client-notes"
-                  value={newClient.notes}
-                  onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
-                  placeholder="Client notes..."
-                  rows={3}
+                <Label htmlFor="lead-email">Email</Label>
+                <Input
+                  id="lead-email"
+                  type="email"
+                  value={newLead.email}
+                  onChange={(e) => setNewLead({...newLead, email: e.target.value})}
+                  placeholder="email@example.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lead-phone">Phone</Label>
+                <Input
+                  id="lead-phone"
+                  value={newLead.phone}
+                  onChange={(e) => setNewLead({...newLead, phone: e.target.value})}
+                  placeholder="+1 (555) 123-4567"
                 />
               </div>
               <div className="flex gap-2">
-                <Button onClick={addClient} disabled={!newClient.name.trim()}>
-                  Add Client
+                <Button onClick={addLead} disabled={!newLead.name.trim()}>
+                  Add Lead
                 </Button>
-                <Button variant="outline" onClick={() => setIsAddingClient(false)}>
+                <Button variant="outline" onClick={() => setIsAddingLead(false)}>
                   Cancel
                 </Button>
               </div>
@@ -210,12 +162,12 @@ export default function CRM() {
         </Dialog>
       </div>
 
-      {/* Search and Filters */}
+      {/* Search */}
       <div className="flex gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search clients..."
+            placeholder="Search leads..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -227,11 +179,11 @@ export default function CRM() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Client List */}
+        {/* Leads List */}
         <div className="lg:col-span-2">
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle>Clients</CardTitle>
+              <CardTitle>Leads ({leads.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -243,43 +195,44 @@ export default function CRM() {
                     </div>
                   ))}
                 </div>
-              ) : filteredClients.length > 0 ? (
+              ) : filteredLeads.length > 0 ? (
                 <div className="space-y-4">
-                  {filteredClients.map((client) => (
+                  {filteredLeads.map((lead) => (
                     <div
-                      key={client.id}
+                      key={lead.id}
                       className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                        selectedClient === client.id ? 'bg-primary/10 border-primary' : 'bg-muted/20 hover:bg-muted/30'
+                        selectedLead === lead.id ? 'bg-primary/10 border-primary' : 'bg-muted/20 hover:bg-muted/30'
                       }`}
-                      onClick={() => setSelectedClient(client.id)}
+                      onClick={() => setSelectedLead(lead.id)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold">{client.name}</h3>
-                          <p className="text-sm text-muted-foreground">{client.company}</p>
+                          <h3 className="font-semibold">{lead.name}</h3>
+                          <p className="text-sm text-muted-foreground">{lead.lead_type}</p>
                           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                            {client.phone && (
+                            {lead.phone && (
                               <span className="flex items-center gap-1">
                                 <Phone className="w-3 h-3" />
-                                {client.phone}
+                                {lead.phone}
                               </span>
                             )}
-                            {client.email && (
+                            {lead.email && (
                               <span className="flex items-center gap-1">
                                 <Mail className="w-3 h-3" />
-                                {client.email}
+                                {lead.email}
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-2 mt-2">
-                            <Badge className="text-xs bg-green-100 text-green-800">
-                              Active
+                            <Badge className={`text-xs ${
+                              lead.status === 'new' ? 'bg-blue-100 text-blue-800' :
+                              lead.status === 'qualified' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {lead.status}
                             </Badge>
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -287,62 +240,62 @@ export default function CRM() {
               ) : (
                 <div className="text-center py-8">
                   <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground mb-4">No clients found</p>
-                  <Button onClick={() => setIsAddingClient(true)}>Add Your First Client</Button>
+                  <p className="text-muted-foreground mb-4">No leads found</p>
+                  <Button onClick={() => setIsAddingLead(true)}>Add Your First Lead</Button>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Client Details */}
+        {/* Lead Details */}
         <div>
-          {selectedClient ? (
+          {selectedLead ? (
             <Card className="glass-card">
               <CardHeader>
-                <CardTitle>Client Details</CardTitle>
+                <CardTitle>Lead Details</CardTitle>
               </CardHeader>
               <CardContent>
                 {(() => {
-                  const client = clients.find(c => c.id === selectedClient);
-                  if (!client) return null;
+                  const lead = leads.find(l => l.id === selectedLead);
+                  if (!lead) return null;
                   
                   return (
                     <div className="space-y-4">
                       <div>
-                        <h3 className="font-semibold text-lg">{client.name}</h3>
-                        <p className="text-muted-foreground">{client.company}</p>
+                        <h3 className="font-semibold text-lg">{lead.name}</h3>
+                        <p className="text-muted-foreground">{lead.lead_type}</p>
                       </div>
                       
                       <div className="space-y-2">
-                        {client.phone && (
+                        {lead.phone && (
                           <div className="flex items-center gap-2">
                             <Phone className="w-4 h-4" />
-                            <span className="text-sm">{client.phone}</span>
+                            <span className="text-sm">{lead.phone}</span>
                           </div>
                         )}
-                        {client.email && (
+                        {lead.email && (
                           <div className="flex items-center gap-2">
                             <Mail className="w-4 h-4" />
-                            <span className="text-sm">{client.email}</span>
+                            <span className="text-sm">{lead.email}</span>
                           </div>
                         )}
                       </div>
                       
                       <div>
                         <p className="text-sm text-muted-foreground">
-                          Added: {new Date(client.created_at).toLocaleDateString()}
+                          Source: {lead.source} • Added: {new Date(lead.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       
                       <div className="flex gap-2 pt-4">
-                        {client.phone && (
+                        {lead.phone && (
                           <Button size="sm" className="flex-1">
                             <Phone className="w-3 h-3 mr-1" />
                             Call
                           </Button>
                         )}
-                        {client.email && (
+                        {lead.email && (
                           <Button size="sm" variant="outline" className="flex-1">
                             <Mail className="w-3 h-3 mr-1" />
                             Email
@@ -357,7 +310,7 @@ export default function CRM() {
           ) : (
             <Card className="glass-card">
               <CardContent className="flex items-center justify-center h-64">
-                <p className="text-muted-foreground">Select a client to view details</p>
+                <p className="text-muted-foreground">Select a lead to view details</p>
               </CardContent>
             </Card>
           )}

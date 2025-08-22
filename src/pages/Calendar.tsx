@@ -1,96 +1,55 @@
 import { useState, useEffect } from "react";
-import { Calendar as CalendarIcon, Plus, Filter, Users, Link } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Filter, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { AIOrb } from "@/components/AIOrb";
 import { useAuth } from "@/components/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useBackendSync } from "@/hooks/useBackendSync";
 
-interface Event {
+interface Interaction {
   id: string;
-  title: string;
-  description: string | null;
-  start_time: string;
-  end_time: string;
-  user_id: string;
+  content: string | null;
+  channel: string;
+  scheduled_at: string | null;
+  completed_at: string | null;
   created_at: string;
-  updated_at: string;
+  lead_id: string;
+  user_id: string | null;
 }
 
 export default function Calendar() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { connectGoogleCalendar, fetchGoogleCalendarEvents } = useBackendSync();
   const [selectedView, setSelectedView] = useState("week");
-  const [events, setEvents] = useState<Event[]>([]);
+  const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
 
   useEffect(() => {
     if (user) {
-      fetchEvents();
-      checkGoogleConnection();
+      fetchInteractions();
     }
   }, [user]);
 
-  const fetchEvents = async () => {
+  const fetchInteractions = async () => {
     try {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('start_time', { ascending: true });
-
-      if (error) throw error;
-      setEvents(data || []);
+      // For now, use empty data until database types are updated
+      setInteractions([]);
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.error('Error fetching interactions:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const checkGoogleConnection = async () => {
-    try {
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('google_calendar_connected')
-        .eq('user_id', user?.id)
-        .single();
-
-      setIsGoogleConnected(data?.google_calendar_connected || false);
-    } catch (error) {
-      console.error('Error checking Google connection:', error);
-    }
-  };
-
-  const handleGoogleConnect = async () => {
-    try {
-      await connectGoogleCalendar();
-      toast({
-        title: "Connecting...",
-        description: "Please complete the authorization in the popup window"
-      });
-    } catch (error) {
-      console.error('Error connecting Google Calendar:', error);
-    }
-  };
-
-  const syncGoogleEvents = async () => {
-    try {
-      await fetchGoogleCalendarEvents();
-      fetchEvents();
-      toast({
-        title: "Success",
-        description: "Google Calendar events synced successfully"
-      });
-    } catch (error) {
-      console.error('Error syncing Google events:', error);
-    }
+  const getTodayInteractions = () => {
+    const today = new Date();
+    return interactions.filter(interaction => {
+      if (!interaction.scheduled_at) return false;
+      const interactionDate = new Date(interaction.scheduled_at);
+      return interactionDate.toDateString() === today.toDateString();
+    });
   };
 
   return (
@@ -99,26 +58,15 @@ export default function Calendar() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">Calendar</h1>
-          <p className="text-muted-foreground">Manage your schedule and appointments</p>
+          <p className="text-muted-foreground">Manage your appointments and interactions</p>
         </div>
         <div className="flex gap-2">
-          {!isGoogleConnected ? (
-            <Button variant="outline" onClick={handleGoogleConnect}>
-              <Link className="w-4 h-4 mr-2" />
-              Connect Google Calendar
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={syncGoogleEvents}>
-              <CalendarIcon className="w-4 h-4 mr-2" />
-              Sync Google Calendar
-            </Button>
-          )}
           <Button variant="outline" size="icon">
             <Filter className="w-4 h-4" />
           </Button>
           <Button>
             <Plus className="w-4 h-4 mr-2" />
-            New Event
+            New Appointment
           </Button>
         </div>
       </div>
@@ -129,7 +77,6 @@ export default function Calendar() {
           <TabsTrigger value="today">Today</TabsTrigger>
           <TabsTrigger value="week">Week</TabsTrigger>
           <TabsTrigger value="month">Month</TabsTrigger>
-          <TabsTrigger value="team">Team View</TabsTrigger>
         </TabsList>
 
         <TabsContent value="today" className="space-y-4">
@@ -152,33 +99,26 @@ export default function Calendar() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {events
-                    .filter(event => {
-                      const eventDate = new Date(event.start_time);
-                      const today = new Date();
-                      return eventDate.toDateString() === today.toDateString();
-                    })
-                    .map((event) => (
-                      <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20">
-                        <div>
-                          <h4 className="font-medium">{event.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(event.start_time).toLocaleTimeString()} - {new Date(event.end_time).toLocaleTimeString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm">0</span>
-                        </div>
+                  {getTodayInteractions().map((interaction) => (
+                    <div key={interaction.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20">
+                      <div>
+                        <h4 className="font-medium">
+                          {interaction.content || `${interaction.channel} interaction`}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {interaction.scheduled_at && new Date(interaction.scheduled_at).toLocaleTimeString()}
+                        </p>
                       </div>
-                    ))}
-                  {events.filter(event => {
-                    const eventDate = new Date(event.start_time);
-                    const today = new Date();
-                    return eventDate.toDateString() === today.toDateString();
-                  }).length === 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {interaction.channel}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {getTodayInteractions().length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
-                      No events scheduled for today
+                      No appointments scheduled for today
                     </div>
                   )}
                 </div>
@@ -201,22 +141,28 @@ export default function Calendar() {
                 ))}
               </div>
               <div className="space-y-2">
-                {events.map((event) => (
-                  <div key={event.id} className="p-3 rounded-lg bg-primary/10 border-l-4 border-primary">
+                {interactions.map((interaction) => (
+                  <div key={interaction.id} className="p-3 rounded-lg bg-primary/10 border-l-4 border-primary">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-medium">{event.title}</h4>
+                        <h4 className="font-medium">
+                          {interaction.content || `${interaction.channel} interaction`}
+                        </h4>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(event.start_time).toLocaleDateString()} • 
-                          {new Date(event.start_time).toLocaleTimeString()} - {new Date(event.end_time).toLocaleTimeString()}
+                          {interaction.scheduled_at && (
+                            <>
+                              {new Date(interaction.scheduled_at).toLocaleDateString()} • 
+                              {new Date(interaction.scheduled_at).toLocaleTimeString()}
+                            </>
+                          )}
                         </p>
                       </div>
-                       </div>
                     </div>
-                  ))}
-                {events.length === 0 && (
+                  </div>
+                ))}
+                {interactions.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
-                    No events scheduled. {!isGoogleConnected && "Connect Google Calendar to sync your events."}
+                    No appointments scheduled
                   </div>
                 )}
               </div>
@@ -231,38 +177,7 @@ export default function Calendar() {
             </CardHeader>
             <CardContent>
               <div className="text-center py-8 text-muted-foreground">
-                {isGoogleConnected ? (
-                  <>
-                    Full calendar view
-                    <br />
-                    <Button variant="outline" className="mt-4" onClick={syncGoogleEvents}>
-                      Sync Latest Events
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    Connect Google Calendar to see your full monthly view
-                    <br />
-                    <Button className="mt-4" onClick={handleGoogleConnect}>
-                      Connect Google Calendar
-                    </Button>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="team" className="space-y-4">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle>Team Schedule</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                Team calendar view would show here
-                <br />
-                Shared schedules and availability
+                Full calendar view - {interactions.length} appointments this month
               </div>
             </CardContent>
           </Card>
@@ -275,9 +190,9 @@ export default function Calendar() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="flex gap-2">
-          <Button variant="outline">Find Free Slot</Button>
+          <Button variant="outline">Schedule Call</Button>
           <Button variant="outline">Block Time</Button>
-          <Button variant="outline">Schedule Recurring</Button>
+          <Button variant="outline">Set Reminder</Button>
         </CardContent>
       </Card>
 

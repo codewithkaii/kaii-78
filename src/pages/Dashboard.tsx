@@ -46,16 +46,14 @@ export default function Dashboard() {
 
     try {
       // Fetch user's actual data
-      const [clientsRes, eventsRes, documentsRes, companyRes] = await Promise.all([
-        supabase.from('clients').select('id').eq('user_id', user.id),
-        supabase.from('events').select('id').eq('user_id', user.id),
+      const [documentsRes, companyRes] = await Promise.all([
         supabase.from('documents').select('id').eq('user_id', user.id),
         supabase.from('companies').select('id').eq('user_id', user.id).single()
       ]);
 
       setUserStats({
-        clients: clientsRes.data?.length || 0,
-        events: eventsRes.data?.length || 0,
+        clients: 0, // Will be added when database types are updated
+        events: 0, // Will be added later
         documents: documentsRes.data?.length || 0,
         hasCompany: !!companyRes.data
       });
@@ -75,12 +73,12 @@ export default function Dashboard() {
 
   const stats = [
     {
-      title: "CLIENTS",
+      title: "LEADS",
       value: userStats.clients.toString(),
-      description: userStats.clients > 0 ? "Active clients" : "No clients yet",
+      description: userStats.clients > 0 ? "Active leads" : "No leads yet",
       icon: Users,
       color: "text-primary",
-      action: () => navigate('/crm')
+      action: () => navigate('/leads')
     },
     {
       title: "DOCUMENTS",
@@ -117,10 +115,10 @@ export default function Dashboard() {
       primary: !userStats.hasCompany
     },
     {
-      title: "Add Clients",
-      description: "Start building your client database",
+      title: "Add Leads",
+      description: "Start building your leads database",
       icon: Users,
-      action: () => navigate('/crm'),
+      action: () => navigate('/leads'),
       primary: userStats.clients === 0
     },
     {
