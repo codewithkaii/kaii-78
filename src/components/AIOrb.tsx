@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConversation } from "@11labs/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { usePlanAccess } from "@/hooks/usePlanAccess";
 
 interface AIOrbProps {
   size?: "small" | "large";
@@ -18,14 +17,13 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
   const [message, setMessage] = useState("");
   const [conversationHistory, setConversationHistory] = useState<string[]>([]);
   const { toast } = useToast();
-  const { checkFeatureAccess } = usePlanAccess();
   
   const conversation = useConversation({
     onConnect: () => {
       console.log("Connected to ElevenLabs");
       toast({
         title: "Voice Assistant Connected",
-        description: "You can now speak with LuniVoice AI",
+        description: "You can now speak with Darvera AI",
       });
     },
     onDisconnect: () => {
@@ -48,9 +46,9 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
     overrides: {
       agent: {
         prompt: {
-          prompt: "You are LuniVoice, a helpful AI assistant for a business management platform. You help users manage their clients, schedule appointments, handle documents, and provide business insights. Be concise, friendly, and professional in your responses. Always offer practical suggestions and ask clarifying questions when needed.",
+          prompt: "You are Darvera AI, a helpful AI assistant for a real estate platform. You help users manage leads, properties, deals, and provide real estate insights. Be concise, friendly, and professional in your responses. Always offer practical suggestions and ask clarifying questions when needed.",
         },
-        firstMessage: "Hello! I'm LuniVoice, your AI business assistant. How can I help you manage your business today?",
+        firstMessage: "Hello! I'm Darvera AI, your real estate assistant. How can I help you manage your properties and leads today?",
         language: "en",
       },
       tts: {
@@ -83,16 +81,6 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
   };
 
   const toggleVoiceConversation = async () => {
-    // Check if user has access to the assistant orb
-    if (!checkFeatureAccess('hasAssistantOrb')) {
-      toast({
-        title: "Upgrade Required",
-        description: "Voice Assistant is available with Pro plan or higher.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       if (conversation.status === "connected") {
         await conversation.endSession();
@@ -188,7 +176,7 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md h-96 flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg">Lunivoice AI Assistant</CardTitle>
+              <CardTitle className="text-lg">Darvera AI Assistant</CardTitle>
               <Button
                 variant="ghost"
                 size="icon"
@@ -232,7 +220,7 @@ export function AIOrb({ size = "large", position = "center" }: AIOrbProps) {
               <div className="flex-1 border rounded-lg p-4 mb-4 bg-muted/20 overflow-y-auto min-h-[200px]">
                 {conversationHistory.length === 0 ? (
                   <div className="text-sm text-muted-foreground text-center">
-                    👋 Hi! I'm LuniVoice, your AI business assistant. Click "Start Voice Chat" to begin speaking, or type a message below!
+                    👋 Hi! I'm Darvera AI, your real estate assistant. Click "Start Voice Chat" to begin speaking, or type a message below!
                   </div>
                 ) : (
                   <div className="space-y-2">

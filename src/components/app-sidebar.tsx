@@ -7,7 +7,11 @@ import {
   Settings, 
   MessageSquare, 
   Zap,
-  Building2
+  Building2,
+  Shield,
+  TrendingUp,
+  Building,
+  DollarSign
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -24,13 +28,12 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: Home },
-  { title: "Calendar", url: "/calendar", icon: Calendar },
-  { title: "CRM", url: "/crm", icon: Users },
-  { title: "Calls & Recordings", url: "/calls", icon: Phone },
+  { title: "Control Tower", url: "/control-tower", icon: Shield },
+  { title: "Leads Engine", url: "/leads", icon: TrendingUp },
+  { title: "Listings Hub", url: "/listings", icon: Building },
+  { title: "Deal Engine", url: "/deals", icon: DollarSign },
+  { title: "CRM & Comms", url: "/crm", icon: Users },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Automation", url: "/automation", icon: Zap },
-  { title: "Messages", url: "/messages", icon: MessageSquare },
 ];
 
 const businessItems = [
@@ -58,14 +61,16 @@ export function AppSidebar() {
       <SidebarContent>
         <div className="p-4">
           <h2 className={`font-bold text-xl ${collapsed ? 'hidden' : 'block'}`}>
-            Lunivoice
+            Darvera AI
           </h2>
-          {collapsed && <div className="w-8 h-8 bg-primary rounded-full"></div>}
+          {collapsed && <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+            <Shield className="w-4 h-4 text-white" />
+          </div>}
         </div>
         
         <SidebarGroup>
           <SidebarGroupLabel className={collapsed ? 'hidden' : 'block'}>
-            Navigation
+            Real Estate Platform
           </SidebarGroupLabel>
           
           <SidebarGroupContent>
