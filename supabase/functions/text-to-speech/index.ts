@@ -19,7 +19,8 @@ serve(async (req) => {
 
     const elevenLabsApiKey = Deno.env.get("ELEVENLABS_API_KEY");
     if (!elevenLabsApiKey) {
-      throw new Error("ELEVENLABS_API_KEY not configured");
+      console.error("ELEVENLABS_API_KEY not configured - please add it in Settings > API Keys");
+      throw new Error("ElevenLabs API key not configured. Please contact your administrator to configure the API keys in Settings.");
     }
 
     // Generate speech from text using ElevenLabs

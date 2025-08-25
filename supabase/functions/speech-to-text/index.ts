@@ -50,7 +50,8 @@ serve(async (req) => {
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY not configured');
+      console.error("OPENAI_API_KEY not configured - please add it in Settings > API Keys");
+      throw new Error('OpenAI API key not configured. Please contact your administrator to configure the API keys in Settings.');
     }
 
     // Process audio in chunks

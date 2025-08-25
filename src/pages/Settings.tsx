@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { User, Phone, Bell, Shield, CreditCard, Mic, Globe, Palette, Play } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, Phone, Bell, Shield, CreditCard, Mic, Globe, Palette, Play, Key, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,8 +11,11 @@ import { AIOrb } from "@/components/AIOrb";
 import BusinessHours from "@/components/BusinessHours";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthContext";
 
 export default function Settings() {
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [profile, setProfile] = useState({
     name: "Alex Johnson",
     email: "alex@example.com",
@@ -30,7 +33,41 @@ export default function Settings() {
   const [selectedVoice, setSelectedVoice] = useState("9BWtsMINqrJLrRacOk9x");
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
+  const [apiKeys, setApiKeys] = useState({
+    openai: "",
+    elevenlabs: "",
+    twilio: "",
+    perplexity: ""
+  });
+  const [showApiKeys, setShowApiKeys] = useState({
+    openai: false,
+    elevenlabs: false,
+    twilio: false,
+    perplexity: false
+  });
+  const [savingApiKeys, setSavingApiKeys] = useState(false);
   const { toast } = useToast();
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        setIsAdmin(profile?.role === 'admin');
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user]);
 
   const voices = [
     // Male voices
@@ -154,6 +191,64 @@ export default function Settings() {
     }
   };
 
+  const saveApiKeys = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Only administrators can manage API keys",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSavingApiKeys(true);
+    
+    try {
+      // Save each API key as a secret
+      const apiKeyEntries = Object.entries(apiKeys).filter(([_, value]) => value.trim());
+      
+      for (const [service, key] of apiKeyEntries) {
+        const secretName = service.toUpperCase() + '_API_KEY';
+        
+        // Call the update secret function
+        const { error } = await supabase.functions.invoke('update-secret', {
+          body: { 
+            secret_name: secretName,
+            secret_value: key
+          }
+        });
+        
+        if (error) {
+          throw new Error(`Failed to save ${service} API key: ${error.message}`);
+        }
+      }
+      
+      toast({
+        title: "API Keys Saved",
+        description: "All API keys have been securely stored and are now active",
+        variant: "default"
+      });
+      
+      // Clear the form
+      setApiKeys({
+        openai: "",
+        elevenlabs: "",
+        twilio: "",
+        perplexity: ""
+      });
+      
+    } catch (error: any) {
+      console.error('Error saving API keys:', error);
+      toast({
+        title: "Error Saving API Keys",
+        description: error.message || "Failed to save API keys",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingApiKeys(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -163,13 +258,14 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-7' : 'grid-cols-6'}`}>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="voice">Voice</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="business">Business</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
+          {isAdmin && <TabsTrigger value="api-keys">API Keys</TabsTrigger>}
         </TabsList>
 
         {/* Profile Settings */}
@@ -530,6 +626,181 @@ export default function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* API Keys - Admin Only */}
+        {isAdmin && (
+          <TabsContent value="api-keys" className="space-y-6">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="w-5 h-5" />
+                  API Key Management
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Configure API keys for third-party services. All keys are securely encrypted and stored.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* OpenAI API Key */}
+                  <div className="space-y-2">
+                    <Label htmlFor="openai-key" className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-green-500 rounded"></div>
+                      OpenAI API Key
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Required for AI-powered lead processing, property analysis, and automated responses
+                    </p>
+                    <div className="relative">
+                      <Input
+                        id="openai-key"
+                        type={showApiKeys.openai ? "text" : "password"}
+                        placeholder="sk-..."
+                        value={apiKeys.openai}
+                        onChange={(e) => setApiKeys({...apiKeys, openai: e.target.value})}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowApiKeys({...showApiKeys, openai: !showApiKeys.openai})}
+                      >
+                        {showApiKeys.openai ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* ElevenLabs API Key */}
+                  <div className="space-y-2">
+                    <Label htmlFor="elevenlabs-key" className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                      ElevenLabs API Key
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Required for AI voice synthesis and text-to-speech functionality
+                    </p>
+                    <div className="relative">
+                      <Input
+                        id="elevenlabs-key"
+                        type={showApiKeys.elevenlabs ? "text" : "password"}
+                        placeholder="xi_..."
+                        value={apiKeys.elevenlabs}
+                        onChange={(e) => setApiKeys({...apiKeys, elevenlabs: e.target.value})}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowApiKeys({...showApiKeys, elevenlabs: !showApiKeys.elevenlabs})}
+                      >
+                        {showApiKeys.elevenlabs ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Twilio API Key */}
+                  <div className="space-y-2">
+                    <Label htmlFor="twilio-key" className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-red-500 rounded"></div>
+                      Twilio API Key
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Required for phone number management, SMS, and call handling
+                    </p>
+                    <div className="relative">
+                      <Input
+                        id="twilio-key"
+                        type={showApiKeys.twilio ? "text" : "password"}
+                        placeholder="AC..."
+                        value={apiKeys.twilio}
+                        onChange={(e) => setApiKeys({...apiKeys, twilio: e.target.value})}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowApiKeys({...showApiKeys, twilio: !showApiKeys.twilio})}
+                      >
+                        {showApiKeys.twilio ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Perplexity API Key */}
+                  <div className="space-y-2">
+                    <Label htmlFor="perplexity-key" className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                      Perplexity API Key
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Required for real-time web search and market data analysis
+                    </p>
+                    <div className="relative">
+                      <Input
+                        id="perplexity-key"
+                        type={showApiKeys.perplexity ? "text" : "password"}
+                        placeholder="pplx-..."
+                        value={apiKeys.perplexity}
+                        onChange={(e) => setApiKeys({...apiKeys, perplexity: e.target.value})}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowApiKeys({...showApiKeys, perplexity: !showApiKeys.perplexity})}
+                      >
+                        {showApiKeys.perplexity ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">Save API Keys</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Only enter keys that need to be updated. Empty fields will be ignored.
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={saveApiKeys} 
+                      disabled={savingApiKeys || !Object.values(apiKeys).some(key => key.trim())}
+                      className="min-w-32"
+                    >
+                      {savingApiKeys ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                          Saving...
+                        </div>
+                      ) : (
+                        "Save Keys"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-muted/20 rounded-lg p-4 border border-muted">
+                  <h4 className="font-medium text-sm mb-2">🔒 Security Information</h4>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li>• All API keys are encrypted using industry-standard encryption</li>
+                    <li>• Keys are stored securely in Supabase Edge Function secrets</li>
+                    <li>• Only administrators can view and modify API keys</li>
+                    <li>• Keys are never logged or displayed in plain text after saving</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* AI Orb */}

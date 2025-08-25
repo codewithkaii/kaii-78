@@ -1,1 +1,25 @@
 project_id = "dwwjtpjpgatmptvukgmr"
+
+[functions.update-secret]
+verify_jwt = true
+
+[functions.api-status]
+verify_jwt = true
+
+[functions.text-to-speech]
+verify_jwt = false
+
+[functions.speech-to-text]
+verify_jwt = false
+
+[functions.elevenlabs-agent]
+verify_jwt = true
+
+[functions.ai-orchestrator]
+verify_jwt = false
+
+[functions.leads-intake]
+verify_jwt = false
+
+[functions.property-analysis]
+verify_jwt = false

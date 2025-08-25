@@ -35,18 +35,18 @@ interface Lead {
   name: string;
   phone: string | null;
   email: string | null;
-  source: 'website' | 'whatsapp' | 'call' | 'referral' | 'ad';
-  persona: 'buyer' | 'seller' | 'investor';
+  source: string;
+  lead_type: 'buyer' | 'seller' | 'investor';
   budget_min: number | null;
   budget_max: number | null;
-  location_preferences: string[];
-  requirements: string | null;
-  ai_score: number;
+  location_preferences: string[] | null;
+  property_preferences: any | null;
+  score: number | null;
   status: 'new' | 'qualified' | 'contacted' | 'meeting_scheduled' | 'converted' | 'lost';
-  assigned_agent: string | null;
+  assigned_to: string | null;
   created_at: string;
   updated_at: string;
-  transcript_summary: string | null;
+  user_id: string | null;
 }
 
 export default function LeadsEngine() {
@@ -58,8 +58,18 @@ export default function LeadsEngine() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isAddingLead, setIsAddingLead] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    lead_type: 'buyer' as 'buyer' | 'seller' | 'investor',
+    budget_min: '',
+    budget_max: '',
+    location_preferences: ''
+  });
+  const [submitLoading, setSubmitLoading] = useState(false);
 
-  // Mock data for demonstration
+  // Mock leads data for now until types are regenerated
   const mockLeads: Lead[] = [
     {
       id: "1",
@@ -67,53 +77,17 @@ export default function LeadsEngine() {
       phone: "+91 9876543210",
       email: "rahul.sharma@gmail.com",
       source: "whatsapp",
-      persona: "buyer",
-      budget_min: 80_00_000,
-      budget_max: 120_00_000,
+      lead_type: "buyer",
+      budget_min: 8000000,
+      budget_max: 12000000,
       location_preferences: ["Andheri West", "Bandra", "Juhu"],
-      requirements: "2-3 BHK apartment, sea view preferred, good connectivity",
-      ai_score: 85,
+      property_preferences: "2-3 BHK apartment, sea view preferred",
+      score: 85,
       status: "qualified",
-      assigned_agent: "Agent 1",
+      assigned_to: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      transcript_summary: "Interested buyer looking for luxury apartment with sea view. Budget flexible up to 1.2Cr."
-    },
-    {
-      id: "2", 
-      name: "Priya Mehta",
-      phone: "+91 9876543211",
-      email: "priya.mehta@yahoo.com",
-      source: "call",
-      persona: "seller",
-      budget_min: null,
-      budget_max: null,
-      location_preferences: ["Powai"],
-      requirements: "Selling 2BHK in Powai, urgent sale required",
-      ai_score: 92,
-      status: "new",
-      assigned_agent: null,
-      created_at: new Date(Date.now() - 3600000).toISOString(),
-      updated_at: new Date(Date.now() - 3600000).toISOString(),
-      transcript_summary: "Property owner with 2BHK in Powai tech hub. Urgent sale due to relocation."
-    },
-    {
-      id: "3",
-      name: "Amit Patel", 
-      phone: "+91 9876543212",
-      email: null,
-      source: "website",
-      persona: "investor",
-      budget_min: 200_00_000,
-      budget_max: 500_00_000,
-      location_preferences: ["Lower Parel", "BKC", "Worli"],
-      requirements: "Commercial spaces for investment, high ROI areas",
-      ai_score: 78,
-      status: "contacted",
-      assigned_agent: "Agent 2",
-      created_at: new Date(Date.now() - 7200000).toISOString(),
-      updated_at: new Date(Date.now() - 1800000).toISOString(),
-      transcript_summary: "HNI investor looking for commercial real estate opportunities in prime locations."
+      user_id: user?.id || null
     }
   ];
 
@@ -121,6 +95,57 @@ export default function LeadsEngine() {
     setLeads(mockLeads);
     setLoading(false);
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('leads-intake', {
+        body: {
+          leadData: {
+            name: formData.name,
+            email: formData.email || null,
+            phone: formData.phone || null,
+            lead_type: formData.lead_type,
+            source: 'manual_entry',
+            budget_min: formData.budget_min ? parseFloat(formData.budget_min) : null,
+            budget_max: formData.budget_max ? parseFloat(formData.budget_max) : null,
+            location_preferences: formData.location_preferences ? formData.location_preferences.split(',').map(s => s.trim()) : null,
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Lead Created",
+        description: "New lead has been successfully added and is being processed by AI.",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        lead_type: 'buyer',
+        budget_min: '',
+        budget_max: '',
+        location_preferences: ''
+      });
+
+      setIsAddingLead(false);
+      // Refresh leads would go here when connected to real database
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create lead",
+        variant: "destructive"
+      });
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -145,8 +170,8 @@ export default function LeadsEngine() {
     }
   };
 
-  const getPersonaColor = (persona: string) => {
-    switch (persona) {
+  const getPersonaColor = (leadType: string) => {
+    switch (leadType) {
       case 'buyer': return 'bg-green-100 text-green-800';
       case 'seller': return 'bg-blue-100 text-blue-800';
       case 'investor': return 'bg-purple-100 text-purple-800';
@@ -214,10 +239,112 @@ export default function LeadsEngine() {
               AI-powered lead intake, qualification, and routing system
             </p>
           </div>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Lead
-          </Button>
+          <Dialog open={isAddingLead} onOpenChange={setIsAddingLead}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Lead
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Lead</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="lead_type">Lead Type *</Label>
+                  <Select value={formData.lead_type} onValueChange={(value: any) => setFormData({...formData, lead_type: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="buyer">Buyer</SelectItem>
+                      <SelectItem value="seller">Seller</SelectItem>
+                      <SelectItem value="investor">Investor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="budget_min">Min Budget</Label>
+                    <Input
+                      id="budget_min"
+                      type="number"
+                      placeholder="e.g. 5000000"
+                      value={formData.budget_min}
+                      onChange={(e) => setFormData({...formData, budget_min: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="budget_max">Max Budget</Label>
+                    <Input
+                      id="budget_max"
+                      type="number"
+                      placeholder="e.g. 10000000"
+                      value={formData.budget_max}
+                      onChange={(e) => setFormData({...formData, budget_max: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="location_preferences">Preferred Locations</Label>
+                  <Input
+                    id="location_preferences"
+                    placeholder="e.g. Andheri, Bandra, Juhu (comma separated)"
+                    value={formData.location_preferences}
+                    onChange={(e) => setFormData({...formData, location_preferences: e.target.value})}
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button type="submit" disabled={submitLoading} className="flex-1">
+                    {submitLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                        Creating...
+                      </div>
+                    ) : (
+                      "Create Lead"
+                    )}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setIsAddingLead(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Stats */}
@@ -334,8 +461,8 @@ export default function LeadsEngine() {
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                   <h3 className="font-semibold">{lead.name}</h3>
-                                  <Badge className={getPersonaColor(lead.persona)}>
-                                    {lead.persona}
+                                  <Badge className={getPersonaColor(lead.lead_type)}>
+                                    {lead.lead_type}
                                   </Badge>
                                   <Badge className={getStatusColor(lead.status)}>
                                     {lead.status.replace('_', ' ')}
@@ -363,10 +490,12 @@ export default function LeadsEngine() {
                                     <span>{formatBudget(lead.budget_min, lead.budget_max)}</span>
                                   </div>
                                   
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="w-3 h-3" />
-                                    <span>{lead.location_preferences.join(", ")}</span>
-                                  </div>
+                                  {lead.location_preferences && (
+                                    <div className="flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" />
+                                      <span>{lead.location_preferences.join(", ")}</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               
@@ -377,14 +506,14 @@ export default function LeadsEngine() {
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Star className="w-4 h-4 text-yellow-500" />
-                                  <span className="text-sm font-medium">{lead.ai_score}</span>
+                                  <span className="text-sm font-medium">{lead.score || 'N/A'}</span>
                                 </div>
                               </div>
                             </div>
                             
-                            {lead.transcript_summary && (
+                            {lead.property_preferences && (
                               <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                                {lead.transcript_summary}
+                                {typeof lead.property_preferences === 'string' ? lead.property_preferences : JSON.stringify(lead.property_preferences)}
                               </p>
                             )}
                           </div>
@@ -407,8 +536,8 @@ export default function LeadsEngine() {
                         <div>
                           <h3 className="font-semibold text-lg">{selectedLead.name}</h3>
                           <div className="flex gap-2 mt-2">
-                            <Badge className={getPersonaColor(selectedLead.persona)}>
-                              {selectedLead.persona}
+                            <Badge className={getPersonaColor(selectedLead.lead_type)}>
+                              {selectedLead.lead_type}
                             </Badge>
                             <Badge className={getStatusColor(selectedLead.status)}>
                               {selectedLead.status.replace('_', ' ')}
@@ -440,16 +569,18 @@ export default function LeadsEngine() {
                             </p>
                           </div>
 
-                          <div>
-                            <p className="text-sm font-medium mb-1">Preferred Locations</p>
-                            <div className="flex flex-wrap gap-1">
-                              {selectedLead.location_preferences.map((location, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {location}
-                                </Badge>
-                              ))}
+                          {selectedLead.location_preferences && (
+                            <div>
+                              <p className="text-sm font-medium mb-1">Preferred Locations</p>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedLead.location_preferences.map((location, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {location}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
-                          </div>
+                          )}
 
                           <div>
                             <p className="text-sm font-medium mb-1">AI Score</p>
@@ -457,18 +588,21 @@ export default function LeadsEngine() {
                               <div className="w-full bg-muted rounded-full h-2">
                                 <div 
                                   className="bg-primary h-2 rounded-full transition-all"
-                                  style={{ width: `${selectedLead.ai_score}%` }}
+                                  style={{ width: `${selectedLead.score || 0}%` }}
                                 ></div>
                               </div>
-                              <span className="text-sm font-medium">{selectedLead.ai_score}</span>
+                              <span className="text-sm font-medium">{selectedLead.score || 'N/A'}</span>
                             </div>
                           </div>
 
-                          {selectedLead.requirements && (
+                          {selectedLead.property_preferences && (
                             <div>
-                              <p className="text-sm font-medium mb-1">Requirements</p>
+                              <p className="text-sm font-medium mb-1">Property Preferences</p>
                               <p className="text-sm text-muted-foreground">
-                                {selectedLead.requirements}
+                                {typeof selectedLead.property_preferences === 'string' 
+                                  ? selectedLead.property_preferences 
+                                  : JSON.stringify(selectedLead.property_preferences)
+                                }
                               </p>
                             </div>
                           )}
