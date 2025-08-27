@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Phone, Bell, Shield, CreditCard, Mic, Globe, Palette, Play, Key, Eye, EyeOff } from "lucide-react";
+import { User, Phone, Bell, Shield, CreditCard, Mic, Globe, Palette, Play, Key, Eye, EyeOff, PhoneCall, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +46,10 @@ export default function Settings() {
     perplexity: false
   });
   const [savingApiKeys, setSavingApiKeys] = useState(false);
+  const [twilioNumbers, setTwilioNumbers] = useState<any[]>([]);
+  const [loadingNumbers, setLoadingNumbers] = useState(false);
+  const [purchasingNumber, setPurchasingNumber] = useState(false);
+  const [newAreaCode, setNewAreaCode] = useState("415");
   const { toast } = useToast();
 
   // Check if user is admin
@@ -68,6 +72,36 @@ export default function Settings() {
 
     checkAdminStatus();
   }, [user]);
+
+  // Load Twilio numbers
+  useEffect(() => {
+    const loadTwilioNumbers = async () => {
+      if (!user || !isAdmin) return;
+      
+      setLoadingNumbers(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_phone_numbers')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        setTwilioNumbers(data || []);
+      } catch (error) {
+        console.error('Error loading Twilio numbers:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load Twilio numbers",
+          variant: "destructive"
+        });
+      } finally {
+        setLoadingNumbers(false);
+      }
+    };
+
+    loadTwilioNumbers();
+  }, [user, isAdmin]);
 
   const voices = [
     // Male voices
@@ -249,6 +283,87 @@ export default function Settings() {
     }
   };
 
+  const purchaseTwilioNumber = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Only administrators can purchase Twilio numbers",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setPurchasingNumber(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('twilio-purchase-number', {
+        body: { areaCode: newAreaCode }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Number Purchased",
+        description: `Successfully purchased ${data.phoneNumber}`,
+        variant: "default"
+      });
+      
+      // Reload numbers
+      const { data: updatedNumbers } = await supabase
+        .from('user_phone_numbers')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+      
+      setTwilioNumbers(updatedNumbers || []);
+      setNewAreaCode("415");
+      
+    } catch (error: any) {
+      console.error('Error purchasing number:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to purchase Twilio number",
+        variant: "destructive"
+      });
+    } finally {
+      setPurchasingNumber(false);
+    }
+  };
+
+  const toggleNumberStatus = async (numberId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('user_phone_numbers')
+        .update({ is_active: !currentStatus })
+        .eq('id', numberId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setTwilioNumbers(prev => 
+        prev.map(num => 
+          num.id === numberId 
+            ? { ...num, is_active: !currentStatus }
+            : num
+        )
+      );
+      
+      toast({
+        title: "Status Updated",
+        description: `Number ${!currentStatus ? 'activated' : 'deactivated'}`,
+        variant: "default"
+      });
+      
+    } catch (error: any) {
+      console.error('Error updating number status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update number status",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -258,7 +373,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-7' : 'grid-cols-6'}`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-8' : 'grid-cols-6'}`}>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="voice">Voice</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -266,6 +381,7 @@ export default function Settings() {
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           {isAdmin && <TabsTrigger value="api-keys">API Keys</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="twilio">Phone Numbers</TabsTrigger>}
         </TabsList>
 
         {/* Profile Settings */}
